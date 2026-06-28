@@ -48,6 +48,7 @@ export default function App() {
 
   // Active Tab
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [settingsTab, setSettingsTab] = useState('whatsapp');
 
   // WhatsApp connection state
   const [wsStatus, setWsStatus] = useState({ status: 'disconnected', qr_code: null });
@@ -600,11 +601,15 @@ export default function App() {
     if (!token) return;
     if (activeTab === 'catalog') fetchCatalog();
     if (activeTab === 'coupons') fetchCoupons();
-    if (activeTab === 'woocommerce') fetchWooConfig();
     if (activeTab === 'dashboard') {
       fetchCarts();
     }
-  }, [activeTab, token]);
+    if (activeTab === 'settings') {
+      if (settingsTab === 'whatsapp') fetchSessionStatus();
+      if (settingsTab === 'ai') fetchAIConfig();
+      if (settingsTab === 'woocommerce') fetchWooConfig();
+    }
+  }, [activeTab, settingsTab, token]);
 
   // Filtered contacts list
   const filteredContacts = contacts.filter(c => 
@@ -704,22 +709,6 @@ export default function App() {
           </button>
           
           <button 
-            className={`nav-item ${activeTab === 'whatsapp' ? 'active' : ''}`}
-            onClick={() => setActiveTab('whatsapp')}
-          >
-            <Wifi size={20} />
-            <span>{t.whatsappConnection}</span>
-          </button>
-
-          <button 
-            className={`nav-item ${activeTab === 'aiConfig' ? 'active' : ''}`}
-            onClick={() => setActiveTab('aiConfig')}
-          >
-            <Settings size={20} />
-            <span>{t.aiConfig}</span>
-          </button>
-
-          <button 
             className={`nav-item ${activeTab === 'crm' ? 'active' : ''}`}
             onClick={() => setActiveTab('crm')}
           >
@@ -733,14 +722,6 @@ export default function App() {
           >
             <Megaphone size={20} />
             <span>{t.campaigns}</span>
-          </button>
-
-          <button 
-            className={`nav-item ${activeTab === 'billing' ? 'active' : ''}`}
-            onClick={() => setActiveTab('billing')}
-          >
-            <CreditCard size={20} />
-            <span>{t.billing}</span>
           </button>
 
           <button 
@@ -760,11 +741,11 @@ export default function App() {
           </button>
 
           <button 
-            className={`nav-item ${activeTab === 'woocommerce' ? 'active' : ''}`}
-            onClick={() => setActiveTab('woocommerce')}
+            className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`}
+            onClick={() => setActiveTab('settings')}
           >
-            <ShoppingBag size={20} />
-            <span>WooCommerce</span>
+            <Settings size={20} />
+            <span>Settings</span>
           </button>
 
           {user && user.role === 'admin' && (
@@ -894,152 +875,455 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB 2: WHATSAPP CONNECTION */}
-        {activeTab === 'whatsapp' && (
+        {/* TAB: UNIFIED SETTINGS */}
+        {activeTab === 'settings' && (
           <div className="tab-pane">
             <div className="pane-header">
-              <h1>{t.whatsappConnection}</h1>
-              <p>Configure and activate the WhatsApp Web gateway.</p>
+              <h1>Settings</h1>
+              <p>Configure your application channels, AI instructions, eCommerce sync, and subscription billing.</p>
             </div>
 
-            <div className="content-card center-card">
-              <h2>{t.connectionStatus}: <span className={`text-${wsStatus.status === 'connected' ? 'success' : 'danger'}`}>{wsStatus.status === 'connected' ? t.connected : t.disconnected}</span></h2>
-
-              {wsStatus.status === 'disconnected' && (
-                <div className="action-box">
-                  <button className="btn btn-primary" onClick={handleConnectWhatsapp} disabled={isConnecting}>
-                    {isConnecting ? <Loader className="spin" size={18} /> : null}
-                    {t.connectButton}
-                  </button>
-                </div>
-              )}
-
-              {wsStatus.status === 'qr' && wsStatus.qr_code && (
-                <div className="qr-box">
-                  <p className="instruction">{t.scanInstruction}</p>
-                  <div className="qr-image-wrapper">
-                    <img src={wsStatus.qr_code} alt="WhatsApp QR Code" />
-                  </div>
-                  <button className="btn btn-outline" onClick={handleDisconnectWhatsapp}>
-                    {t.disconnectButton}
-                  </button>
-                </div>
-              )}
-
-              {wsStatus.status === 'connected' && (
-                <div className="connected-box">
-                  <CheckCircle size={64} className="text-success" />
-                  {wsStatus.phone_number && <h3>+{wsStatus.phone_number}</h3>}
-                  <button className="btn btn-danger" onClick={handleDisconnectWhatsapp}>
-                    {t.disconnectButton}
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* TAB 3: AI CONFIGURATION */}
-        {activeTab === 'aiConfig' && (
-          <div className="tab-pane">
-            <div className="pane-header">
-              <h1>{t.aiTitle}</h1>
-              <p>Set custom system instructions and customize your client agent.</p>
+            <div className="settings-subtabs">
+              <button 
+                type="button" 
+                className={`subtab-btn ${settingsTab === 'whatsapp' ? 'active' : ''}`} 
+                onClick={() => setSettingsTab('whatsapp')}
+              >
+                <Wifi size={18} />
+                <span>WhatsApp Connection</span>
+              </button>
+              <button 
+                type="button" 
+                className={`subtab-btn ${settingsTab === 'ai' ? 'active' : ''}`} 
+                onClick={() => setSettingsTab('ai')}
+              >
+                <Bot size={18} />
+                <span>AI Settings</span>
+              </button>
+              <button 
+                type="button" 
+                className={`subtab-btn ${settingsTab === 'woocommerce' ? 'active' : ''}`} 
+                onClick={() => setSettingsTab('woocommerce')}
+              >
+                <ShoppingBag size={18} />
+                <span>eCommerce (WooCommerce)</span>
+              </button>
+              <button 
+                type="button" 
+                className={`subtab-btn ${settingsTab === 'billing' ? 'active' : ''}`} 
+                onClick={() => setSettingsTab('billing')}
+              >
+                <CreditCard size={18} />
+                <span>Billing & Membership</span>
+              </button>
             </div>
 
-            <div className="content-card">
-              <form onSubmit={handleSaveAIConfig}>
-                {aiSaveMsg && (
-                  <div className={`alert ${aiSaveMsg.startsWith('Error') ? 'alert-danger' : 'alert-success'}`}>
-                    {aiSaveMsg}
+            {/* Sub-tab 1: WhatsApp Channels */}
+            {settingsTab === 'whatsapp' && (
+              <div>
+                <div className="channel-card">
+                  <div className="channel-card-body">
+                    <div className="channel-card-details">
+                      <h3>{wsStatus.phone_number ? `+${wsStatus.phone_number}` : 'No Active Channel'}</h3>
+                      <div className="channel-meta-row">
+                        <span>Channel Status:</span>
+                        <strong className={wsStatus.status === 'connected' ? 'text-success' : 'text-danger'}>
+                          {wsStatus.status === 'connected' ? 'Active' : 'Disconnected'}
+                        </strong>
+                      </div>
+                      <div className="channel-meta-row">
+                        <span>Device Gateway:</span>
+                        <strong>Baileys Web Gateway (Coexistence Mode)</strong>
+                      </div>
+                      {wsStatus.phone_number && (
+                        <div className="channel-meta-row">
+                          <span>Webhook Delivery:</span>
+                          <strong className="text-success">Connected & Healthy</strong>
+                        </div>
+                      )}
+                    </div>
+                    <div className="channel-actions-col">
+                      {wsStatus.status === 'disconnected' ? (
+                        <button className="btn btn-primary" onClick={handleConnectWhatsapp} disabled={isConnecting}>
+                          {isConnecting ? <Loader className="spin" size={16} /> : 'Connect Channel'}
+                        </button>
+                      ) : (
+                        <>
+                          <button className="btn btn-outline" onClick={handleConnectWhatsapp} disabled={isConnecting}>Reconnect</button>
+                          <button className="btn btn-danger" onClick={handleDisconnectWhatsapp}>Disconnect</button>
+                        </>
+                      )}
+                    </div>
                   </div>
-                )}
 
-                <div className="grid grid-2">
-                  <div className="form-group">
-                    <label>{t.aiProvider}</label>
-                    <select 
-                      value={aiConfig.provider}
-                      onChange={e => setAiConfig({ ...aiConfig, provider: e.target.value })}
-                    >
-                      <option value="gemini">Gemini (Google)</option>
-                      <option value="openai">OpenAI</option>
-                      <option value="claude">Claude (Anthropic)</option>
-                      <option value="openrouter">OpenRouter</option>
-                    </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label>{t.aiModel}</label>
-                    <input 
-                      type="text" 
-                      value={aiConfig.model}
-                      placeholder="e.g. gemini-1.5-flash, gpt-4o-mini"
-                      onChange={e => setAiConfig({ ...aiConfig, model: e.target.value })}
-                    />
-                  </div>
+                  {/* QR Code display */}
+                  {(wsStatus.status === 'disconnected' || wsStatus.status === 'qr') && wsStatus.qr_code && (
+                    <div className="qr-box" style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      <p className="instruction">Scan this QR code using WhatsApp Link a Device:</p>
+                      <div className="qr-image-wrapper">
+                        <img src={wsStatus.qr_code} alt="WhatsApp Web QR Code" />
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                {user && user.role === 'admin' && (
-                  <div className="form-group">
-                    <label>{t.apiKeyOverride}</label>
-                    <input 
-                      type="password" 
-                      value={aiConfig.api_key}
-                      placeholder="sk-..."
-                      onChange={e => setAiConfig({ ...aiConfig, api_key: e.target.value })}
-                    />
+                <div className="channel-health-section">
+                  <h3>
+                    <CheckCircle className="text-success" size={20} />
+                    <span>Channel Health Status</span>
+                  </h3>
+                  <div className="health-grid">
+                    <div className="health-card live">
+                      <h4>Account Mode</h4>
+                      <div className="health-status-value">{wsStatus.status === 'connected' ? 'LIVE' : 'OFFLINE'}</div>
+                    </div>
+                    <div className="health-card green">
+                      <h4>Quality Rating</h4>
+                      <div className="health-status-value">{wsStatus.status === 'connected' ? 'GREEN' : 'UNKNOWN'}</div>
+                    </div>
+                    <div className="health-card unconfirmed">
+                      <h4>Messaging Limit</h4>
+                      <div className="health-status-value">{wsStatus.status === 'connected' ? 'Unconfirmed' : 'N/A'}</div>
+                    </div>
                   </div>
-                )}
-
-                <div className="form-group">
-                  <label>{t.systemPrompt}</label>
-                  <textarea 
-                    rows={6}
-                    value={aiConfig.system_prompt}
-                    onChange={e => setAiConfig({ ...aiConfig, system_prompt: e.target.value })}
-                  />
                 </div>
+              </div>
+            )}
 
-                <div className="form-group">
-                  <label>{t.supportPrompt}</label>
-                  <textarea 
-                    rows={6}
-                    value={aiConfig.support_prompt || ''}
-                    onChange={e => setAiConfig({ ...aiConfig, support_prompt: e.target.value })}
-                    placeholder="Maagizo maalum ya Msaidizi wa Malalamiko na Support..."
-                  />
-                </div>
+            {/* Sub-tab 2: AI Config */}
+            {settingsTab === 'ai' && (
+              <div className="content-card">
+                <form onSubmit={handleSaveAIConfig}>
+                  {aiSaveMsg && (
+                    <div className={`alert ${aiSaveMsg.startsWith('Error') ? 'alert-danger' : 'alert-success'}`}>
+                      {aiSaveMsg}
+                    </div>
+                  )}
 
-                <div className="grid grid-2">
-                  <div className="form-group">
-                    <label>{t.temperature} ({aiConfig.temperature})</label>
-                    <input 
-                      type="range" 
-                      min="0" 
-                      max="1.2" 
-                      step="0.1"
-                      value={aiConfig.temperature}
-                      onChange={e => setAiConfig({ ...aiConfig, temperature: parseFloat(e.target.value) })}
-                    />
-                  </div>
+                  <div className="grid grid-2">
+                    <div className="form-group">
+                      <label>{t.aiProvider}</label>
+                      <select 
+                        value={aiConfig.provider}
+                        onChange={e => setAiConfig({ ...aiConfig, provider: e.target.value })}
+                      >
+                        <option value="gemini">Gemini (Google)</option>
+                        <option value="openai">OpenAI</option>
+                        <option value="claude">Claude (Anthropic)</option>
+                        <option value="openrouter">OpenRouter</option>
+                      </select>
+                    </div>
 
-                  <div className="form-group checkbox-group">
-                    <label className="toggle-switch">
+                    <div className="form-group">
+                      <label>{t.aiModel}</label>
                       <input 
-                        type="checkbox"
-                        checked={aiConfig.enabled === 1}
-                        onChange={e => setAiConfig({ ...aiConfig, enabled: e.target.checked ? 1 : 0 })}
+                        type="text" 
+                        value={aiConfig.model}
+                        placeholder="e.g. gemini-2.0-flash, gpt-4o-mini"
+                        onChange={e => setAiConfig({ ...aiConfig, model: e.target.value })}
                       />
-                      <span className="slider"></span>
-                    </label>
-                    <span className="checkbox-label">{aiConfig.enabled === 1 ? t.disableAI : t.enableAI}</span>
+                    </div>
+                  </div>
+
+                  {user && user.role === 'admin' && (
+                    <div className="form-group">
+                      <label>{t.apiKeyOverride}</label>
+                      <input 
+                        type="password" 
+                        value={aiConfig.api_key}
+                        placeholder="sk-..."
+                        onChange={e => setAiConfig({ ...aiConfig, api_key: e.target.value })}
+                      />
+                    </div>
+                  )}
+
+                  <div className="form-group">
+                    <label>{t.systemPrompt}</label>
+                    <textarea 
+                      rows={6}
+                      value={aiConfig.system_prompt}
+                      onChange={e => setAiConfig({ ...aiConfig, system_prompt: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>{t.supportPrompt}</label>
+                    <textarea 
+                      rows={6}
+                      value={aiConfig.support_prompt || ''}
+                      onChange={e => setAiConfig({ ...aiConfig, support_prompt: e.target.value })}
+                      placeholder="Maagizo maalum ya Msaidizi wa Malalamiko na Support..."
+                    />
+                  </div>
+
+                  <div className="grid grid-2">
+                    <div className="form-group">
+                      <label>{t.temperature} ({aiConfig.temperature})</label>
+                      <input 
+                        type="range" 
+                        min="0" 
+                        max="1.2" 
+                        step="0.1"
+                        value={aiConfig.temperature}
+                        onChange={e => setAiConfig({ ...aiConfig, temperature: parseFloat(e.target.value) })}
+                      />
+                    </div>
+
+                    <div className="form-group checkbox-group">
+                      <label className="toggle-switch">
+                        <input 
+                          type="checkbox"
+                          checked={aiConfig.enabled === 1}
+                          onChange={e => setAiConfig({ ...aiConfig, enabled: e.target.checked ? 1 : 0 })}
+                        />
+                        <span className="slider"></span>
+                      </label>
+                      <span className="checkbox-label">{aiConfig.enabled === 1 ? t.disableAI : t.enableAI}</span>
+                    </div>
+                  </div>
+
+                  <button type="submit" className="btn btn-primary">{t.saveConfig}</button>
+                </form>
+              </div>
+            )}
+
+            {/* Sub-tab 3: WooCommerce Settings */}
+            {settingsTab === 'woocommerce' && (
+              <div className="grid grid-2">
+                {/* Settings Form */}
+                <div className="content-card">
+                  <h2>Configure Integration</h2>
+                  <form onSubmit={handleSaveWooConfig}>
+                    {wooSaveMsg && (
+                      <div className={`alert ${wooSaveMsg.startsWith('Error') ? 'alert-danger' : 'alert-success'}`}>
+                        {wooSaveMsg}
+                      </div>
+                    )}
+
+                    <div className="form-group">
+                      <label>Domain Name *</label>
+                      <input 
+                        type="url" 
+                        required 
+                        placeholder="https://yourstore.com"
+                        value={wooConfig.domain_name}
+                        onChange={e => setWooConfig({ ...wooConfig, domain_name: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label>Consumer Key *</label>
+                      <input 
+                        type="text" 
+                        required 
+                        placeholder="ck_..."
+                        value={wooConfig.consumer_key}
+                        onChange={e => setWooConfig({ ...wooConfig, consumer_key: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label>Consumer Secret *</label>
+                      <input 
+                        type="password" 
+                        required 
+                        placeholder="cs_..."
+                        value={wooConfig.consumer_secret}
+                        onChange={e => setWooConfig({ ...wooConfig, consumer_secret: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label>Status</label>
+                      <select 
+                        value={wooConfig.active}
+                        onChange={e => setWooConfig({ ...wooConfig, active: parseInt(e.target.value) })}
+                      >
+                        <option value="1">Active</option>
+                        <option value="0">Inactive</option>
+                      </select>
+                    </div>
+
+                    <div className="form-group" style={{ flexDirection: 'row', gap: '10px', alignItems: 'center' }}>
+                      <input 
+                        type="checkbox" 
+                        id="sync_products"
+                        checked={wooConfig.sync_products === 1}
+                        onChange={e => setWooConfig({ ...wooConfig, sync_products: e.target.checked ? 1 : 0 })}
+                      />
+                      <label htmlFor="sync_products" style={{ cursor: 'pointer', fontWeight: 'normal' }}>Import WooCommerce Products</label>
+                    </div>
+
+                    <div className="form-group" style={{ flexDirection: 'row', gap: '10px', alignItems: 'center' }}>
+                      <input 
+                        type="checkbox" 
+                        id="create_orders"
+                        checked={wooConfig.create_orders === 1}
+                        onChange={e => setWooConfig({ ...wooConfig, create_orders: e.target.checked ? 1 : 0 })}
+                      />
+                      <label htmlFor="create_orders" style={{ cursor: 'pointer', fontWeight: 'normal' }}>Create WooCommerce Orders & Send</label>
+                    </div>
+
+                    <div className="button-group mt-3" style={{ display: 'flex', gap: '12px' }}>
+                      <button type="submit" className="btn btn-primary">Save Settings</button>
+                      {wooConfig.active === 1 && (
+                        <button 
+                          type="button" 
+                          className="btn btn-outline"
+                          onClick={handleSyncWooProducts}
+                          disabled={isSyncingWoo}
+                        >
+                          {isSyncingWoo ? <Loader className="spin" size={16} /> : 'Sync Products Now'}
+                        </button>
+                      )}
+                    </div>
+                  </form>
+                </div>
+
+                {/* Instructions Guide */}
+                <div className="content-card">
+                  <h2>Get Your WooCommerce Keys</h2>
+                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.92rem', lineHeight: '1.6' }}>
+                    <p>To integrate with WooCommerce you will need your store URL, consumer key, and consumer secret API keys.</p>
+                    <ol style={{ paddingLeft: '20px', marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <li>Log in to your WordPress admin panel and navigate to <strong>WooCommerce settings</strong>.</li>
+                      <li>Go to the <strong>Advanced</strong> tab, click on <strong>REST API</strong>, and click <strong>Add key</strong>.</li>
+                      <li>Enter a description, select user, and set permissions to <strong>Read/Write</strong>, then generate the API keys.</li>
+                      <li>Copy the <strong>Consumer Key</strong> and <strong>Consumer Secret</strong> and paste them in the settings form.</li>
+                      <li>Your store URL is usually in the format: <code>https://yourstore.com</code></li>
+                    </ol>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Sub-tab 4: Billing & SaaS */}
+            {settingsTab === 'billing' && (
+              <div>
+                <div className="grid grid-3">
+                  {/* Free Plan */}
+                  <div className="pricing-card">
+                    <h3>{t.freePlan}</h3>
+                    <div className="price">0 {t.currency}<span>/ month</span></div>
+                    <ul>
+                      <li>1 AI Agent Connection</li>
+                      <li>Gemini 2.0 Flash Support</li>
+                      <li>Basic CRM & Chat Logs</li>
+                    </ul>
+                    <button className="btn btn-outline btn-block mt-3" disabled>Active Plan</button>
+                  </div>
+
+                  {/* Pro Agent Plan */}
+                  <div className="pricing-card featured">
+                    <h3>{t.proPlan}</h3>
+                    <div className="price">10,000 {t.currency}<span>/ month</span></div>
+                    <ul>
+                      <li>All AI Engines (Claude, OpenAI)</li>
+                      <li>Full Bulk Campaigns</li>
+                      <li>Advanced CRM Tags & Filters</li>
+                      <li>Fast Agent Response Time</li>
+                    </ul>
+                    <button 
+                      className="btn btn-primary btn-block mt-3"
+                      onClick={() => {
+                        setPayAmount(10000);
+                        setPayStatus('input');
+                      }}
+                    >
+                      Subscribe (10k)
+                    </button>
+                  </div>
+
+                  {/* Elite Enterprise Plan */}
+                  <div className="pricing-card">
+                    <h3>{t.premiumPlan}</h3>
+                    <div className="price">25,000 {t.currency}<span>/ month</span></div>
+                    <ul>
+                      <li>Unlimited Contacts & History</li>
+                      <li>High-speed bulk queuing</li>
+                      <li>Priority Server Bandwidth</li>
+                      <li>Dedicated Support agent</li>
+                    </ul>
+                    <button 
+                      className="btn btn-primary btn-block mt-3"
+                      onClick={() => {
+                        setPayAmount(25000);
+                        setPayStatus('input');
+                      }}
+                    >
+                      Subscribe (25k)
+                    </button>
                   </div>
                 </div>
 
-                <button type="submit" className="btn btn-primary">{t.saveConfig}</button>
-              </form>
-            </div>
+                {/* Payment Input Modal/Section */}
+                {(payStatus === 'input' || payStatus === 'processing' || payStatus === 'success') && (
+                  <div className="payment-modal content-card mt-5">
+                    <h2>Complete Subscription Payment</h2>
+                    <p>Package upgrade: <strong>{payAmount === 10000 ? t.proPlan : t.premiumPlan}</strong> ({payAmount.toLocaleString()} {t.currency})</p>
+
+                    {payStatus === 'input' && (
+                      <form onSubmit={handlePayment}>
+                        <div className="form-group">
+                          <label>{t.inputPaymentPhone}</label>
+                          <input 
+                            type="text" 
+                            required 
+                            placeholder="e.g. 0768222333"
+                            value={payPhone}
+                            onChange={e => setPayPhone(e.target.value)}
+                          />
+                        </div>
+
+                        <div className="form-group">
+                          <label>Select Payment Provider</label>
+                          <div className="payment-providers">
+                            <label className="provider-option">
+                              <input 
+                                type="radio" 
+                                name="provider" 
+                                value="mpesa"
+                                checked={payProvider === 'mpesa'}
+                                onChange={() => setPayProvider('mpesa')}
+                              />
+                              <span>Vodacom M-Pesa</span>
+                            </label>
+                            <label className="provider-option">
+                              <input 
+                                type="radio" 
+                                name="provider" 
+                                value="tigopesa"
+                                checked={payProvider === 'tigopesa'}
+                                onChange={() => setPayProvider('tigopesa')}
+                              />
+                              <span>Tigo Pesa</span>
+                            </label>
+                          </div>
+                        </div>
+
+                        <button type="submit" className="btn btn-primary">{t.payNow}</button>
+                      </form>
+                    )}
+
+                    {payStatus === 'processing' && (
+                      <div className="payment-spinner">
+                        <Loader className="spin" size={48} />
+                        <p>{t.paymentProcessing}</p>
+                        <span className="ref-display">Transaction Ref: {payRef}</span>
+                      </div>
+                    )}
+
+                    {payStatus === 'success' && (
+                      <div className="payment-success-box">
+                        <CheckCircle size={64} className="text-success" />
+                        <p>{t.paymentSuccess}</p>
+                        <button className="btn btn-primary" onClick={() => setPayStatus('')}>Close</button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -1365,138 +1649,7 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB 6: BILLING & SaaS PRICING */}
-        {activeTab === 'billing' && (
-          <div className="tab-pane">
-            <div className="pane-header">
-              <h1>{t.billingTitle}</h1>
-              <p>Choose a plan and pay automatically with M-Pesa or Tigo Pesa push notifications.</p>
-            </div>
 
-            <div className="grid grid-3">
-              {/* Free Plan */}
-              <div className="pricing-card">
-                <h3>{t.freePlan}</h3>
-                <div className="price">0 {t.currency}<span>/ month</span></div>
-                <ul>
-                  <li>1 AI Agent Connection</li>
-                  <li>Gemini 1.5 Flash Support</li>
-                  <li>Basic CRM & Chat Logs</li>
-                </ul>
-                <button className="btn btn-outline btn-block mt-3" disabled>Active Plan</button>
-              </div>
-
-              {/* Pro Agent Plan */}
-              <div className="pricing-card featured">
-                <h3>{t.proPlan}</h3>
-                <div className="price">10,000 {t.currency}<span>/ month</span></div>
-                <ul>
-                  <li>All AI Engines (Claude, OpenAI)</li>
-                  <li>Full Bulk Campaigns</li>
-                  <li>Advanced CRM Tags & Filters</li>
-                  <li>Fast Agent Response Time</li>
-                </ul>
-                <button 
-                  className="btn btn-primary btn-block mt-3"
-                  onClick={() => {
-                    setPayAmount(10000);
-                    setPayStatus('input');
-                  }}
-                >
-                  Subscribe (10k)
-                </button>
-              </div>
-
-              {/* Elite Enterprise Plan */}
-              <div className="pricing-card">
-                <h3>{t.premiumPlan}</h3>
-                <div className="price">25,000 {t.currency}<span>/ month</span></div>
-                <ul>
-                  <li>Unlimited Contacts & History</li>
-                  <li>High-speed bulk queuing</li>
-                  <li>Priority Server Bandwidth</li>
-                  <li>Dedicated Support agent</li>
-                </ul>
-                <button 
-                  className="btn btn-primary btn-block mt-3"
-                  onClick={() => {
-                    setPayAmount(25000);
-                    setPayStatus('input');
-                  }}
-                >
-                  Subscribe (25k)
-                </button>
-              </div>
-            </div>
-
-            {/* Payment Input Modal/Section */}
-            {(payStatus === 'input' || payStatus === 'processing' || payStatus === 'success') && (
-              <div className="payment-modal content-card mt-5">
-                <h2>Complete Subscription Payment</h2>
-                <p>Package upgrade: <strong>{payAmount === 10000 ? t.proPlan : t.premiumPlan}</strong> ({payAmount.toLocaleString()} {t.currency})</p>
-
-                {payStatus === 'input' && (
-                  <form onSubmit={handlePayment}>
-                    <div className="form-group">
-                      <label>{t.inputPaymentPhone}</label>
-                      <input 
-                        type="text" 
-                        required 
-                        placeholder="e.g. 0768222333"
-                        value={payPhone}
-                        onChange={e => setPayPhone(e.target.value)}
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label>Select Payment Provider</label>
-                      <div className="payment-providers">
-                        <label className="provider-option">
-                          <input 
-                            type="radio" 
-                            name="provider" 
-                            value="mpesa"
-                            checked={payProvider === 'mpesa'}
-                            onChange={() => setPayProvider('mpesa')}
-                          />
-                          <span>Vodacom M-Pesa</span>
-                        </label>
-                        <label className="provider-option">
-                          <input 
-                            type="radio" 
-                            name="provider" 
-                            value="tigopesa"
-                            checked={payProvider === 'tigopesa'}
-                            onChange={() => setPayProvider('tigopesa')}
-                          />
-                          <span>Tigo Pesa</span>
-                        </label>
-                      </div>
-                    </div>
-
-                    <button type="submit" className="btn btn-primary">{t.payNow}</button>
-                  </form>
-                )}
-
-                {payStatus === 'processing' && (
-                  <div className="payment-spinner">
-                    <Loader className="spin" size={48} />
-                    <p>{t.paymentProcessing}</p>
-                    <span className="ref-display">Transaction Ref: {payRef}</span>
-                  </div>
-                )}
-
-                {payStatus === 'success' && (
-                  <div className="payment-success-box">
-                    <CheckCircle size={64} className="text-success" />
-                    <p>{t.paymentSuccess}</p>
-                    <button className="btn btn-primary" onClick={() => setPayStatus('')}>Close</button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
 
         {/* TAB 7: SUPER ADMIN */}
         {activeTab === 'admin' && user.role === 'admin' && (
@@ -1858,123 +2011,6 @@ export default function App() {
                     )}
                   </div>
                 </form>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 10: WOOCOMMERCE */}
-        {activeTab === 'woocommerce' && (
-          <div className="tab-pane">
-            <div className="pane-header">
-              <h1>WooCommerce Settings</h1>
-              <p>Connect your WooCommerce store to sync product inventory and capture WhatsApp orders.</p>
-            </div>
-
-            <div className="grid grid-2">
-              {/* Settings Form */}
-              <div className="content-card">
-                <h2>Configure Integration</h2>
-                <form onSubmit={handleSaveWooConfig}>
-                  {wooSaveMsg && (
-                    <div className={`alert ${wooSaveMsg.startsWith('Error') ? 'alert-danger' : 'alert-success'}`}>
-                      {wooSaveMsg}
-                    </div>
-                  )}
-
-                  <div className="form-group">
-                    <label>Domain Name *</label>
-                    <input 
-                      type="url" 
-                      required 
-                      placeholder="https://yourstore.com"
-                      value={wooConfig.domain_name}
-                      onChange={e => setWooConfig({ ...wooConfig, domain_name: e.target.value })}
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Consumer Key *</label>
-                    <input 
-                      type="text" 
-                      required 
-                      placeholder="ck_..."
-                      value={wooConfig.consumer_key}
-                      onChange={e => setWooConfig({ ...wooConfig, consumer_key: e.target.value })}
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Consumer Secret *</label>
-                    <input 
-                      type="password" 
-                      required 
-                      placeholder="cs_..."
-                      value={wooConfig.consumer_secret}
-                      onChange={e => setWooConfig({ ...wooConfig, consumer_secret: e.target.value })}
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Status</label>
-                    <select 
-                      value={wooConfig.active}
-                      onChange={e => setWooConfig({ ...wooConfig, active: parseInt(e.target.value) })}
-                    >
-                      <option value="1">Active</option>
-                      <option value="0">Inactive</option>
-                    </select>
-                  </div>
-
-                  <div className="form-group" style={{ flexDirection: 'row', gap: '10px', alignItems: 'center' }}>
-                    <input 
-                      type="checkbox" 
-                      id="sync_products"
-                      checked={wooConfig.sync_products === 1}
-                      onChange={e => setWooConfig({ ...wooConfig, sync_products: e.target.checked ? 1 : 0 })}
-                    />
-                    <label htmlFor="sync_products" style={{ cursor: 'pointer', fontWeight: 'normal' }}>Import WooCommerce Products</label>
-                  </div>
-
-                  <div className="form-group" style={{ flexDirection: 'row', gap: '10px', alignItems: 'center' }}>
-                    <input 
-                      type="checkbox" 
-                      id="create_orders"
-                      checked={wooConfig.create_orders === 1}
-                      onChange={e => setWooConfig({ ...wooConfig, create_orders: e.target.checked ? 1 : 0 })}
-                    />
-                    <label htmlFor="create_orders" style={{ cursor: 'pointer', fontWeight: 'normal' }}>Create WooCommerce Orders & Send</label>
-                  </div>
-
-                  <div className="button-group mt-3" style={{ display: 'flex', gap: '12px' }}>
-                    <button type="submit" className="btn btn-primary">Save Settings</button>
-                    {wooConfig.active === 1 && (
-                      <button 
-                        type="button" 
-                        className="btn btn-outline"
-                        onClick={handleSyncWooProducts}
-                        disabled={isSyncingWoo}
-                      >
-                        {isSyncingWoo ? <Loader className="spin" size={16} /> : 'Sync Products Now'}
-                      </button>
-                    )}
-                  </div>
-                </form>
-              </div>
-
-              {/* Instructions Guide */}
-              <div className="content-card">
-                <h2>Get Your WooCommerce Keys</h2>
-                <div style={{ color: 'var(--text-secondary)', fontSize: '0.92rem', lineHeight: '1.6' }}>
-                  <p>To integrate with WooCommerce you will need your store URL, consumer key, and consumer secret API keys.</p>
-                  <ol style={{ paddingLeft: '20px', marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <li>Log in to your WordPress admin panel and navigate to <strong>WooCommerce settings</strong>.</li>
-                    <li>Go to the <strong>Advanced</strong> tab, click on <strong>REST API</strong>, and click <strong>Add key</strong>.</li>
-                    <li>Enter a description, select user, and set permissions to <strong>Read/Write</strong>, then generate the API keys.</li>
-                    <li>Copy the <strong>Consumer Key</strong> and <strong>Consumer Secret</strong> and paste them in the settings form.</li>
-                    <li>Your store URL is usually in the format: <code>https://yourstore.com</code></li>
-                  </ol>
-                </div>
               </div>
             </div>
           </div>

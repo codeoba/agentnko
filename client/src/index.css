@@ -1072,3 +1072,147 @@ body {
   padding: 0;
   box-shadow: 0 4px 12px var(--primary-glow);
 }
+
+/* Unified Settings Subtabs Bar */
+.settings-subtabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 24px;
+  padding-bottom: 4px;
+  overflow-x: auto;
+}
+
+.subtab-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  padding: 10px 16px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 8px;
+  transition: var(--transition);
+  white-space: nowrap;
+}
+
+.subtab-btn:hover {
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-primary);
+}
+
+.subtab-btn.active {
+  background: rgba(139, 92, 246, 0.1);
+  color: var(--primary);
+  font-weight: 600;
+}
+
+/* WhatsApp Channel Premium Layout */
+.channel-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.channel-card-body {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.channel-card-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-grow: 1;
+}
+
+.channel-card-details h3 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.channel-meta-row {
+  display: flex;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  gap: 8px;
+}
+
+.channel-meta-row strong {
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+}
+
+.channel-actions-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 150px;
+}
+
+/* Channel Health Dashboard Grid */
+.channel-health-section {
+  margin-top: 32px;
+}
+
+.channel-health-section h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.health-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.health-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.health-card h4 {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.health-status-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.health-card.live .health-status-value {
+  color: #10b981;
+}
+
+.health-card.green .health-status-value {
+  color: #10b981;
+}
+
+.health-card.amber .health-status-value {
+  color: #f59e0b;
+}
+
+.health-card.unconfirmed .health-status-value {
+  color: #3b82f6;
+}
