@@ -21,6 +21,7 @@ import { getAnalyticsOverview, getTopKeywords, getResponseTimeStats, getContactG
 import { startScheduler, applySegmentFilters, createScheduledMessage } from './services/schedulerService.js';
 import { generateApiKey, verifyApiKey, testWebhook, triggerWebhook, WEBHOOK_EVENTS } from './services/webhookService.js';
 import { createOrder, updateOrderStatus, getOrdersWithContacts, getOrderStats } from './services/orderService.js';
+import { seedDefaultTemplates } from './db/templateSeeds.js';
 
 dotenv.config();
 
@@ -53,40 +54,19 @@ async function startServer() {
     );
 
     // Seed default quick reply templates for admin
-    await seedDefaultTemplates(result.lastID, db);
+    await seedDefaultTemplates(db, result.lastID);
     console.log(`Seeded Super Admin user: ${adminEmail}`);
   }
 
   await initAllSessions();
   startAbandonedCartScheduler();
-  startScheduler(); // Start new enterprise scheduler
-
+  startScheduler();
   app.listen(PORT, () => {
     console.log(`🚀 AgentNKO Enterprise Backend running on http://localhost:${PORT}`);
   });
 }
 
-async function seedDefaultTemplates(userId, db) {
-  const templates = [
-    { name: 'Salamu ya Kwanza', shortcut: '/salamu', category: 'greetings', content: 'Habari! Karibu sana AgentNKO Store 🛍️\n\nNinaweza kukusaidia nini leo?\n1️⃣ Bei za bidhaa\n2️⃣ Kutoa order\n3️⃣ Mahali tulipo\n4️⃣ Njia za malipo' },
-    { name: 'Bei ya Bidhaa', shortcut: '/bei', category: 'pricing', content: 'Asante kwa kuuliza bei! 💰\n\nBei zetu ni kama ifuatavyo:\n• [Bidhaa 1] - TZS [Bei]\n• [Bidhaa 2] - TZS [Bei]\n\nJe, ungependa kuorder?' },
-    { name: 'Confirm Order', shortcut: '/order', category: 'orders', content: '✅ Order yako imepokewa!\n\nTafadhali nitumie:\n1. Jina lako kamili\n2. Eneo la delivery\n3. Namba ya simu\n\nUtasaidiwa haraka iwezekanavyo 🚀' },
-    { name: 'Malipo M-Pesa', shortcut: '/mpesa', category: 'payments', content: '💳 Lipa kwa M-Pesa:\n\nNamba: [NAMBA YAKO]\nJina: [JINA LAKO]\nKiasi: TZS [KIASI]\n\nBaada ya kulipa tuma screenshot ya receipt. Asante!' },
-    { name: 'Delivery Info', shortcut: '/delivery', category: 'orders', content: '🚚 Taarifa za Delivery:\n\n• Dar es Salaam: TZS 3,000 - 5,000\n• Miji mingine: TZS 10,000+\n• Muda: Siku 1-3 za kazi\n\nJe, unahitaji delivery?' },
-    { name: 'Out of Stock', shortcut: '/oos', category: 'products', content: '😔 Samahani! Bidhaa hii haipatikani sasa hivi.\n\nUnaweza:\n1. Kutuacha namba yako - tutakupigia ukifika\n2. Angalia bidhaa nyingine zinazofanana\n\nAsante kwa uvumilivu wako! 🙏' },
-    { name: 'Kuhusu Sisi', shortcut: '/info', category: 'general', content: '🏪 Kuhusu [Jina la Biashara]:\n\n📍 Mahali: [Eneo]\n⏰ Masaa ya Kazi: [Masaa]\n📞 Simu: [Namba]\n🌐 Website: [URL]\n\nTunafurahi kukusaidia!' },
-    { name: 'Asante', shortcut: '/asante', category: 'greetings', content: 'Asante sana kwa kununua kwetu! 🙏❤️\n\nTunafurahi sana ulivyochagua sisi. Kama una maswali yoyote usisite kutupigia.\n\nKarudi tena! 😊' },
-    { name: 'Kufunga Mazungumzo', shortcut: '/bye', category: 'greetings', content: 'Asante kwa mazungumzo! 👋\n\nKama utahitaji msaada wowote, usisite kurudi. Tuko hapa kwa ajili yako 24/7!\n\nKwa heri na siku njema! ☀️' },
-    { name: 'Kuwasiliana na Binadamu', shortcut: '/agent', category: 'support', content: '👤 Nitakuunganisha na mfanyakazi wetu mara moja...\n\n⏰ Muda wa kusubiri: Dakika 5-10\n\nAsante kwa uvumilivu wako! Utasaidiwa hivi karibuni.' },
-  ];
 
-  for (const t of templates) {
-    await db.run(
-      'INSERT OR IGNORE INTO quick_reply_templates (user_id, name, shortcut, content, category) VALUES (?, ?, ?, ?, ?)',
-      [userId, t.name, t.shortcut, t.content, t.category]
-    );
-  }
-}
 
 // Auth Middleware
 function authenticateToken(req, res, next) {
@@ -149,7 +129,7 @@ app.post('/api/auth/register', async (req, res) => {
       [result.lastID]
     );
 
-    await seedDefaultTemplates(result.lastID, db);
+    await seedDefaultTemplates(db, result.lastID);
 
     const token = jwt.sign({ id: result.lastID, email, name, role: 'user' }, JWT_SECRET, { expiresIn: '7d' });
     res.json({ token, user: { id: result.lastID, name, email, plan: 'free', role: 'user', active_until: null } });
@@ -934,10 +914,17 @@ app.delete('/api/segments/:id', authenticateToken, async (req, res) => {
 app.get('/api/templates', authenticateToken, async (req, res) => {
   const db = getDb();
   try {
-    const templates = await db.all(
+    let templates = await db.all(
       'SELECT * FROM quick_reply_templates WHERE user_id = ? ORDER BY category, name',
       [req.user.id]
     );
+    if (templates.length === 0) {
+      await seedDefaultTemplates(db, req.user.id);
+      templates = await db.all(
+        'SELECT * FROM quick_reply_templates WHERE user_id = ? ORDER BY category, name',
+        [req.user.id]
+      );
+    }
     res.json(templates);
   } catch (err) {
     res.status(500).json({ error: err.message });
