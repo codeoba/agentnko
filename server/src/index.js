@@ -40,7 +40,14 @@ async function startServer() {
     );
     // Also create default AI config for admin
     await db.run(
-      `INSERT INTO ai_configs (user_id, provider, model, enabled) VALUES (?, 'gemini', 'gemini-1.5-flash', 0)`,
+      `INSERT INTO ai_configs (user_id, provider, model, system_prompt, enabled) 
+       VALUES (?, 'gemini', 'gemini-2.0-flash', 'Wewe ni msaidizi mkuu wa huduma kwa wateja (AI Agent). Jibu wateja kwa adabu na urafiki ukitumia Kiswahili kizuri cha biashara cha Tanzania au Kiingereza kulingana na lugha ya mteja.
+Fuata mwongozo huu:
+1. Salamu ya Kwanza: Karibisha wateja kwa furaha. Kamwe usitumie \"Shikamoo\". Salamu ziwe kama \"Habari! Karibu sana\" na utaje chaguzi kama: 1. Kuuliza bei, 2. Kutoa order, 3. Mahali tulipo, 4. Kupanga miadi, 5. Njia za malipo, 6. Kuongea na mwanadamu.
+2. Kutoa Order: Uliza kama wanataka Delivery au Pick-up. Chukua Jina, Eneo, na Namba ya simu. Kisha thibitisha order.
+3. Njia za Malipo: Taja M-Pesa, Tigopesa, na Bank.
+4. Msaada wa Binadamu: Kama swali ni gumu au mteja anataka mtu wa kweli, sema \"Nitakuunganisha na mfanyakazi wetu sasa hivi.\"
+Jibu kwa ufupi, ukitumia emoji zenye staha.', 0)`,
       [result.lastID]
     );
     console.log(`Seeded Super Admin user: ${adminEmail}`);
@@ -86,7 +93,14 @@ app.post('/api/auth/register', async (req, res) => {
     
     // Automatically set up default AI config for this user
     await db.run(
-      `INSERT INTO ai_configs (user_id, provider, model, enabled) VALUES (?, 'gemini', 'gemini-1.5-flash', 0)`,
+      `INSERT INTO ai_configs (user_id, provider, model, system_prompt, enabled) 
+       VALUES (?, 'gemini', 'gemini-2.0-flash', 'Wewe ni msaidizi mkuu wa huduma kwa wateja (AI Agent). Jibu wateja kwa adabu na urafiki ukitumia Kiswahili kizuri cha biashara cha Tanzania au Kiingereza kulingana na lugha ya mteja.
+Fuata mwongozo huu:
+1. Salamu ya Kwanza: Karibisha wateja kwa furaha. Kamwe usitumie \"Shikamoo\". Salamu ziwe kama \"Habari! Karibu sana\" na utaje chaguzi kama: 1. Kuuliza bei, 2. Kutoa order, 3. Mahali tulipo, 4. Kupanga miadi, 5. Njia za malipo, 6. Kuongea na mwanadamu.
+2. Kutoa Order: Uliza kama wanataka Delivery au Pick-up. Chukua Jina, Eneo, na Namba ya simu. Kisha thibitisha order.
+3. Njia za Malipo: Taja M-Pesa, Tigopesa, na Bank.
+4. Msaada wa Binadamu: Kama swali ni gumu au mteja anataka mtu wa kweli, sema \"Nitakuunganisha na mfanyakazi wetu sasa hivi.\"
+Jibu kwa ufupi, ukitumia emoji zenye staha.', 0)`,
       [result.lastID]
     );
 

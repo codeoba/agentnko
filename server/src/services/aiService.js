@@ -39,10 +39,10 @@ function getPlatformApiKey(provider) {
   }
 }
 
-async function callGemini(prompt, systemPrompt, apiKey, model = 'gemini-1.5-flash', temperature = 0.7) {
+async function callGemini(prompt, systemPrompt, apiKey, model = 'gemini-2.0-flash', temperature = 0.7) {
   const genAI = new GoogleGenerativeAI(apiKey);
   const aiModel = genAI.getGenerativeModel({
-    model: model || 'gemini-1.5-flash',
+    model: model || 'gemini-2.0-flash',
     systemInstruction: systemPrompt
   });
   const result = await aiModel.generateContent({

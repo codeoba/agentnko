@@ -54,7 +54,7 @@ export default function App() {
   // AI Configuration State
   const [aiConfig, setAiConfig] = useState({
     provider: 'gemini',
-    model: 'gemini-1.5-flash',
+    model: 'gemini-2.0-flash',
     api_key: '',
     system_prompt: '',
     temperature: 0.7,
