@@ -1089,11 +1089,11 @@ export default function App() {
             ) : (
               <div className="grid grid-3">
                 {automations.map(a => (
-                  <div key={a.id} className="content-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '230px' }}>
+                  <div key={a.id} className="glass-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '230px' }}>
                     <div>
                       <div className="log-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: a.active === 1 ? '#10b981' : '#ef4444' }}></span>
+                          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: a.active === 1 ? '#10b981' : '#ef4444', boxShadow: a.active === 1 ? '0 0 10px #10b981' : 'none' }}></span>
                           <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: '600' }}>{a.name}</h4>
                         </div>
                         <label className="toggle-switch">
@@ -1106,18 +1106,18 @@ export default function App() {
                         </label>
                       </div>
 
-                      <p className="log-text" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '12px' }}>
+                      <p className="log-text" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
                         {a.description || 'No description provided.'}
                       </p>
 
                       <div className="badges-row" style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '12px' }}>
-                        <span className="badge badge-pending" style={{ fontSize: '0.75rem' }}>{a.trigger_type}</span>
+                        <span className="badge badge-trigger" style={{ fontSize: '0.75rem' }}>{a.trigger_type}</span>
                         {a.condition_type !== 'always' && (
-                          <span className="badge badge-failed" style={{ fontSize: '0.75rem' }}>
+                          <span className="badge badge-condition" style={{ fontSize: '0.75rem' }}>
                             {a.condition_type}: "{a.condition_value}"
                           </span>
                         )}
-                        <span className="badge badge-completed" style={{ fontSize: '0.75rem' }}>
+                        <span className="badge badge-action" style={{ fontSize: '0.75rem' }}>
                           {a.action_type === 'send_message' ? 'reply' : a.action_type}
                         </span>
                       </div>
@@ -1164,8 +1164,8 @@ export default function App() {
 
             {/* Create/Edit Flow Modal */}
             {showAddAutomation && (
-              <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
-                <div className="content-card" style={{ width: '550px', maxHeight: '90vh', overflowY: 'auto' }}>
+              <div className="modal-overlay-blur">
+                <div className="modal-content-premium">
                   <h2>{selectedAutomation ? 'Edit Automation Flow' : 'Create New Automation Flow'}</h2>
                   <form onSubmit={handleSaveAutomation}>
                     
@@ -1999,6 +1999,7 @@ export default function App() {
             </div>
 
             <div className="grid grid-2">
+              {/* Launch Campaign */}
               <div className="content-card">
                 <h2>Launch Campaign</h2>
                 <form onSubmit={handleLaunchCampaign}>
@@ -2011,6 +2012,7 @@ export default function App() {
                       required 
                       value={campForm.name}
                       onChange={e => setCampForm({ ...campForm, name: e.target.value })}
+                      placeholder="e.g. Wikiendi Mlipuko Promo"
                     />
                   </div>
 
@@ -2029,32 +2031,41 @@ export default function App() {
                     <textarea 
                       rows={5}
                       required
+                      placeholder="Ujumbe utakaotumwa kwa wateja..."
                       value={campForm.text}
                       onChange={e => setCampForm({ ...campForm, text: e.target.value })}
                     />
                   </div>
 
-                  <button type="submit" className="btn btn-primary">
+                  <button type="submit" className="btn btn-primary btn-block">
                     <Play size={16} />
                     {t.launchCampaign}
                   </button>
                 </form>
               </div>
 
+              {/* Campaign Logs */}
               <div className="content-card">
-                <h2>Campaign Logs</h2>
-                <div className="logs-list">
+                <h2>Campaign Dispatch History</h2>
+                <div className="timeline-carts-feed" style={{ maxHeight: '500px', overflowY: 'auto' }}>
                   {campaigns.length === 0 ? (
-                    <p>No campaigns executed yet.</p>
+                    <p style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>No campaigns executed yet.</p>
                   ) : (
                     campaigns.map(c => (
-                      <div key={c.id} className="log-item">
-                        <div className="log-header">
-                          <h4>{c.name}</h4>
-                          <span className={`badge badge-${c.status}`}>{t[c.status] || c.status}</span>
+                      <div key={c.id} className="timeline-cart-node completed">
+                        <div className="log-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <h4 style={{ margin: 0, fontSize: '0.98rem' }}>{c.name}</h4>
+                          <span className={`badge badge-${c.status === 'sent' ? 'completed' : 'pending'}`}>
+                            {c.status === 'sent' ? 'Imetwa Tayari' : c.status}
+                          </span>
                         </div>
-                        <p className="log-text">{c.text}</p>
-                        <span className="log-time">{t.scheduledAt}: {new Date(c.created_at).toLocaleString()}</span>
+                        <p className="log-text" style={{ fontSize: '0.85rem', margin: '8px 0', color: 'var(--text-secondary)' }}>
+                          {c.text}
+                        </p>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                          <span>Target: {c.target_tags || 'Wote'}</span>
+                          <span>{t.scheduledAt}: {new Date(c.created_at).toLocaleString()}</span>
+                        </div>
                       </div>
                     ))
                   )}
@@ -2204,41 +2215,47 @@ export default function App() {
             </div>
 
             <div className="grid grid-2">
-              {/* Product list table */}
+              {/* Product list grid */}
               <div className="content-card">
                 <h2>All Products</h2>
-                <div className="logs-list" style={{ maxHeight: '500px' }}>
+                <div style={{ maxHeight: '600px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px', paddingRight: '4px' }}>
                   {catalog.length === 0 ? (
-                    <p>No products in catalog. Add your first product on the right.</p>
+                    <p style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>No products in catalog. Add your first product on the right.</p>
                   ) : (
                     catalog.map(p => (
-                      <div key={p.id} className="log-item" style={{ marginBottom: '8px', padding: '12px' }}>
-                        <div className="log-header">
-                          <h4>{p.name}</h4>
-                          <span className={`badge badge-${p.status === 'available' ? 'completed' : 'failed'}`}>
-                            {p.status === 'available' ? t.available : t.outOfStock}
-                          </span>
+                      <div key={p.id} className="product-premium-card" style={{ padding: '20px' }}>
+                        <div>
+                          <div className="log-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: '700' }}>{p.name}</h4>
+                            <span className={`badge badge-${p.status === 'available' ? 'completed' : 'failed'}`} style={{ textTransform: 'uppercase', fontSize: '0.7rem' }}>
+                              {p.status === 'available' ? t.available : t.outOfStock}
+                            </span>
+                          </div>
+                          <p className="log-text" style={{ fontSize: '0.88rem', margin: '8px 0 12px 0', color: 'var(--text-secondary)' }}>
+                            {p.description || 'No description provided.'}
+                          </p>
                         </div>
-                        <p className="log-text"><strong>Price:</strong> {p.price.toLocaleString()} TZS</p>
-                        <p className="log-text" style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{p.description || 'No description'}</p>
-                        <div className="button-group mt-2" style={{ display: 'flex', gap: '8px' }}>
-                          <button 
-                            className="btn btn-outline" 
-                            style={{ padding: '4px 8px', fontSize: '0.75rem' }}
-                            onClick={() => {
-                              setSelectedProduct(p);
-                              setCatalogForm({ name: p.name, price: p.price, description: p.description, status: p.status });
-                            }}
-                          >
-                            Edit
-                          </button>
-                          <button 
-                            className="btn btn-danger" 
-                            style={{ padding: '4px 8px', fontSize: '0.75rem' }}
-                            onClick={() => handleDeleteProduct(p.id)}
-                          >
-                            {t.delete}
-                          </button>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-color)', paddingTop: '12px' }}>
+                          <span className="product-price-tag">{p.price.toLocaleString()} TZS</span>
+                          <div className="button-group" style={{ display: 'flex', gap: '8px' }}>
+                            <button 
+                              className="btn btn-outline" 
+                              style={{ padding: '4px 8px', fontSize: '0.75rem' }}
+                              onClick={() => {
+                                setSelectedProduct(p);
+                                setCatalogForm({ name: p.name, price: p.price, description: p.description, status: p.status });
+                              }}
+                            >
+                              Edit
+                            </button>
+                            <button 
+                              className="btn btn-danger" 
+                              style={{ padding: '4px 8px', fontSize: '0.75rem' }}
+                              onClick={() => handleDeleteProduct(p.id)}
+                            >
+                              {t.delete}
+                            </button>
+                          </div>
                         </div>
                       </div>
                     ))
@@ -2255,6 +2272,7 @@ export default function App() {
                     <input 
                       type="text" 
                       required 
+                      placeholder="e.g. Sukari 1kg"
                       value={catalogForm.name}
                       onChange={e => setCatalogForm({ ...catalogForm, name: e.target.value })}
                     />
@@ -2265,6 +2283,7 @@ export default function App() {
                     <input 
                       type="number" 
                       required 
+                      placeholder="e.g. 3000"
                       value={catalogForm.price}
                       onChange={e => setCatalogForm({ ...catalogForm, price: e.target.value })}
                     />
@@ -2274,6 +2293,7 @@ export default function App() {
                     <label>{t.productDesc}</label>
                     <textarea 
                       rows={3} 
+                      placeholder="Maelezo kuhusu bidhaa hii..."
                       value={catalogForm.description || ''}
                       onChange={e => setCatalogForm({ ...catalogForm, description: e.target.value })}
                     />
@@ -2290,8 +2310,8 @@ export default function App() {
                     </select>
                   </div>
 
-                  <div className="button-group">
-                    <button type="submit" className="btn btn-primary">Save Product</button>
+                  <div className="button-group mt-3" style={{ display: 'flex', gap: '12px' }}>
+                    <button type="submit" className="btn btn-primary" style={{ flexGrow: 1 }}>Save Product</button>
                     {selectedProduct && (
                       <button 
                         type="button" 
@@ -2320,42 +2340,46 @@ export default function App() {
             </div>
 
             <div className="grid grid-2">
-              {/* Coupons List Table */}
+              {/* Coupons Grid */}
               <div className="content-card">
                 <h2>All Coupons</h2>
-                <div className="logs-list" style={{ maxHeight: '500px' }}>
+                <div style={{ maxHeight: '600px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px', paddingRight: '4px' }}>
                   {coupons.length === 0 ? (
-                    <p>No coupons created yet. Create your first promo code on the right.</p>
+                    <p style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>No coupons created yet. Create your first promo code on the right.</p>
                   ) : (
                     coupons.map(c => (
-                      <div key={c.id} className="log-item" style={{ marginBottom: '8px', padding: '12px' }}>
-                        <div className="log-header">
-                          <h4>{c.code}</h4>
+                      <div key={c.id} className="coupon-ticket">
+                        <div className="log-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <h3 style={{ margin: 0, fontFamily: 'monospace', fontWeight: '800', letterSpacing: '0.05em', color: 'var(--primary)' }}>
+                            {c.code}
+                          </h3>
                           <span className={`badge badge-${c.active === 1 ? 'completed' : 'failed'}`}>
                             {c.active === 1 ? t.active : t.inactive}
                           </span>
                         </div>
-                        <p className="log-text">
-                          <strong>Discount:</strong> {c.discount_type === 'percentage' ? `${c.value}%` : `${c.value.toLocaleString()} TZS`}
-                        </p>
-                        <div className="button-group mt-2" style={{ display: 'flex', gap: '8px' }}>
-                          <button 
-                            className="btn btn-outline" 
-                            style={{ padding: '4px 8px', fontSize: '0.75rem' }}
-                            onClick={() => {
-                              setSelectedCoupon(c);
-                              setCouponForm({ code: c.code, discount_type: c.discount_type, value: c.value, active: c.active });
-                            }}
-                          >
-                            Edit
-                          </button>
-                          <button 
-                            className="btn btn-danger" 
-                            style={{ padding: '4px 8px', fontSize: '0.75rem' }}
-                            onClick={() => handleDeleteCoupon(c.id)}
-                          >
-                            {t.delete}
-                          </button>
+                        <div style={{ margin: '12px 0 16px 0', fontSize: '1.2rem', fontWeight: '700', color: '#10b981' }}>
+                          {c.discount_type === 'percentage' ? `${c.value}% OFF` : `-${c.value.toLocaleString()} TZS`}
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px dashed rgba(255,255,255,0.05)', paddingTop: '12px' }}>
+                          <div className="button-group" style={{ display: 'flex', gap: '8px' }}>
+                            <button 
+                              className="btn btn-outline" 
+                              style={{ padding: '4px 8px', fontSize: '0.75rem' }}
+                              onClick={() => {
+                                setSelectedCoupon(c);
+                                setCouponForm({ code: c.code, discount_type: c.discount_type, value: c.value, active: c.active });
+                              }}
+                            >
+                              Edit
+                            </button>
+                            <button 
+                              className="btn btn-danger" 
+                              style={{ padding: '4px 8px', fontSize: '0.75rem' }}
+                              onClick={() => handleDeleteCoupon(c.id)}
+                            >
+                              {t.delete}
+                            </button>
+                          </div>
                         </div>
                       </div>
                     ))
@@ -2394,6 +2418,7 @@ export default function App() {
                     <input 
                       type="number" 
                       required 
+                      placeholder="e.g. 20, 5000"
                       value={couponForm.value}
                       onChange={e => setCouponForm({ ...couponForm, value: e.target.value })}
                     />
@@ -2410,8 +2435,8 @@ export default function App() {
                     </select>
                   </div>
 
-                  <div className="button-group">
-                    <button type="submit" className="btn btn-primary">Save Coupon</button>
+                  <div className="button-group mt-3" style={{ display: 'flex', gap: '12px' }}>
+                    <button type="submit" className="btn btn-primary" style={{ flexGrow: 1 }}>Save Coupon</button>
                     {selectedCoupon && (
                       <button 
                         type="button" 
