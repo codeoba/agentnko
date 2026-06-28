@@ -129,6 +129,17 @@ Jibu kwa ufupi, ukitumia emoji zenye staha.',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
+
+    CREATE TABLE IF NOT EXISTS carts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      contact_id INTEGER NOT NULL UNIQUE,
+      cart_data TEXT,
+      last_activity DATETIME DEFAULT CURRENT_TIMESTAMP,
+      reminder_sent INTEGER DEFAULT 0,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE CASCADE
+    );
   `);
 
   console.log('SQLite Database initialized successfully.');
@@ -139,6 +150,22 @@ Jibu kwa ufupi, ukitumia emoji zenye staha.',
   if (!hasRole) {
     await db.exec("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'user'");
     console.log("Migration: Added role column to users table.");
+  }
+
+  // Migration: Add support_prompt column to ai_configs if it doesn't exist
+  const aiColumns = await db.all("PRAGMA table_info(ai_configs)");
+  const hasSupportPrompt = aiColumns.some(c => c.name === 'support_prompt');
+  if (!hasSupportPrompt) {
+    await db.exec("ALTER TABLE ai_configs ADD COLUMN support_prompt TEXT DEFAULT 'Wewe ni msaidizi wa kiufundi na malalamiko ya wateja (Technical Support Agent). Jibu wateja kwa adabu na utatue matatizo yao ya kiufundi au ucheleweshaji wa delivery.'");
+    console.log("Migration: Added support_prompt column to ai_configs table.");
+  }
+
+  // Migration: Add agent_mode column to contacts if it doesn't exist
+  const contactColumns = await db.all("PRAGMA table_info(contacts)");
+  const hasAgentMode = contactColumns.some(c => c.name === 'agent_mode');
+  if (!hasAgentMode) {
+    await db.exec("ALTER TABLE contacts ADD COLUMN agent_mode TEXT DEFAULT 'sales'");
+    console.log("Migration: Added agent_mode column to contacts table.");
   }
 
   return db;

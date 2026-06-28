@@ -1,7 +1,8 @@
 import makeWASocket, { 
   useMultiFileAuthState, 
   DisconnectReason,
-  fetchLatestBaileysVersion
+  fetchLatestBaileysVersion,
+  downloadMediaMessage
 } from '@whiskeysockets/baileys';
 import { Boom } from '@hapi/boom';
 import path from 'path';
@@ -11,6 +12,7 @@ import QRCode from 'qrcode';
 import pino from 'pino';
 import { getDb } from '../db/db.js';
 import { askAI } from './aiService.js';
+import { generateReceiptPdf } from './receiptService.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const sessionsDir = path.resolve(__dirname, '../../sessions');
@@ -143,11 +145,26 @@ export async function startWhatsappSession(userId) {
       if (remoteJid.endsWith('@g.us')) continue; // Ignore groups
       
       const phone = remoteJid.split('@')[0];
-      const text = msg.message?.conversation || 
+      
+      // Determine if message is audio
+      const isAudio = !!(msg.message?.audioMessage);
+      let text = msg.message?.conversation || 
                    msg.message?.extendedTextMessage?.text || 
                    '';
+      
+      let audioBase64 = null;
+      if (isAudio) {
+        try {
+          console.log(`Downloading audio message from ${phone}...`);
+          const buffer = await downloadMediaMessage(msg, 'buffer', {});
+          audioBase64 = buffer.toString('base64');
+          text = "[Customer sent a voice message]";
+        } catch (err) {
+          console.error("Failed to download voice note:", err);
+        }
+      }
 
-      if (!text) continue;
+      if (!text && !audioBase64) continue;
 
       console.log(`Incoming message from ${phone} to user ${userId}: "${text}"`);
 
@@ -160,13 +177,23 @@ export async function startWhatsappSession(userId) {
       if (!contact) {
         const contactName = msg.pushName || phone;
         await db.run(
-          `INSERT INTO contacts (user_id, phone_number, name, tags, notes)
-           VALUES (?, ?, ?, 'lead', '')`,
+          `INSERT INTO contacts (user_id, phone_number, name, tags, notes, agent_mode)
+           VALUES (?, ?, ?, 'lead', '', 'sales')`,
           [userId, phone, contactName]
         );
         contact = await db.get(
           'SELECT * FROM contacts WHERE user_id = ? AND phone_number = ?',
           [userId, phone]
+        );
+      }
+
+      // Upsert cart activity whenever a potential order is in progress
+      if (text.toLowerCase().includes('order') || text.toLowerCase().includes('sukari') || text.toLowerCase().includes('bei') || text.toLowerCase().includes('mchele') || text.toLowerCase().includes('kitenge') || text.toLowerCase().includes('jeans')) {
+        await db.run(
+          `INSERT INTO carts (user_id, contact_id, cart_data, last_activity, reminder_sent) 
+           VALUES (?, ?, ?, CURRENT_TIMESTAMP, 0)
+           ON CONFLICT(contact_id) DO UPDATE SET last_activity = CURRENT_TIMESTAMP, reminder_sent = 0`,
+          [userId, contact.id, text]
         );
       }
 
@@ -228,25 +255,92 @@ export async function startWhatsappSession(userId) {
             dynamicContext += 'Mteja akitaja kuponi mojawapo kati ya hizi, piga hesabu ya punguzo na mpe bei mpya ya kulipa wakati wa kuhitimisha order yake.\n';
           }
 
-          const combinedSystemPrompt = aiConfig.system_prompt + dynamicContext;
-          const responseText = await askAI(promptContext, combinedSystemPrompt, aiConfig);
+          // Select prompt based on agent mode
+          let activePrompt = aiConfig.system_prompt;
+          if (contact.agent_mode === 'support') {
+            activePrompt = aiConfig.support_prompt || activePrompt;
+          }
+
+          // Inject Department switching instruction
+          activePrompt += `\n\nMAELEKEZO YA ROUTING YA IDARA (MUHIMU SANA):
+- Ikiwa wewe kwa sasa ni Sales Agent na mteja anahitaji msaada wa kiufundi au anataka kulalamika au anaongelea matatizo ya delivery/malipo, hakikisha unaandika tag hii mwishoni kabisa mwa jibu lako: [ROUTE: support]
+- Ikiwa wewe kwa sasa ni Support Agent na mteja anataka kununua bidhaa, kuuliza bei ya bidhaa, au kuanza kutoa order, hakikisha unaandika tag hii mwishoni kabisa mwa jibu lako: [ROUTE: sales]
+- Usionyeshe tag hii kama chaguo, iandike tu mwishoni mwa ujumbe wako pale inapohitajika kubadili idara.
+
+- Pia ikiwa utathibitisha kuorder kwa mteja (kutoa namba ya order), hakikisha unaongeza tag hii mwishoni mwa ujumbe ili mfumo wetu utengeneze PDF stakabadhi kiotomatiki: [RECEIPT_DATA: {"items":[{"name":"Sukari","price":3000,"quantity":2}],"discount":0,"customerName":"Jina la Mteja","deliveryAddress":"Anuani"}] - data iwe na muundo huu wa JSON sahihi.`;
+
+          const combinedSystemPrompt = activePrompt + dynamicContext;
+          const responseText = await askAI(promptContext, combinedSystemPrompt, aiConfig, audioBase64);
           
           if (responseText) {
+            let cleanedResponse = responseText;
+            
+            // 1. Check for Route switching tags
+            if (responseText.includes('[ROUTE: support]')) {
+              cleanedResponse = responseText.replace('[ROUTE: support]', '').trim();
+              await db.run("UPDATE contacts SET agent_mode = 'support' WHERE id = ?", [contact.id]);
+              console.log(`Dynamic Route: Switched contact ${contact.phone_number} to Support Mode`);
+            } else if (responseText.includes('[ROUTE: sales]')) {
+              cleanedResponse = responseText.replace('[ROUTE: sales]', '').trim();
+              await db.run("UPDATE contacts SET agent_mode = 'sales' WHERE id = ?", [contact.id]);
+              console.log(`Dynamic Route: Switched contact ${contact.phone_number} to Sales Mode`);
+            }
+
+            // 2. Check for PDF receipt generation tag
+            let receiptPath = null;
+            if (cleanedResponse.includes('[RECEIPT_DATA:')) {
+              try {
+                const startIdx = cleanedResponse.indexOf('[RECEIPT_DATA:');
+                const endIdx = cleanedResponse.indexOf(']', startIdx);
+                const jsonStr = cleanedResponse.slice(startIdx + 14, endIdx);
+                const receiptData = JSON.parse(jsonStr);
+                
+                // Clean the output message
+                cleanedResponse = (cleanedResponse.slice(0, startIdx) + cleanedResponse.slice(endIdx + 1)).trim();
+                
+                // Generate PDF
+                receiptPath = await generateReceiptPdf({
+                  orderId: Math.floor(Math.random() * 900000) + 100000,
+                  brandName: aiConfig.provider === 'gemini' ? 'AgentNKO Store' : 'AgentNKO Commerce',
+                  customerName: receiptData.customerName || contact.name,
+                  customerPhone: phone,
+                  deliveryAddress: receiptData.deliveryAddress || 'Pick-up',
+                  items: receiptData.items || [],
+                  discount: receiptData.discount || 0
+                });
+                
+              } catch (pdfErr) {
+                console.error("Failed to parse receipt data or generate PDF:", pdfErr);
+              }
+            }
+
             // Send reply
-            await sock.sendMessage(remoteJid, { text: responseText });
+            await sock.sendMessage(remoteJid, { text: cleanedResponse });
+
+            // If PDF receipt was generated, send it!
+            if (receiptPath && fs.existsSync(receiptPath)) {
+              await sock.sendMessage(remoteJid, {
+                document: fs.readFileSync(receiptPath),
+                mimetype: 'application/pdf',
+                fileName: `Stakabadhi_Order_${phone}.pdf`
+              });
+              // Delete temp file after sending
+              try {
+                fs.unlinkSync(receiptPath);
+              } catch (_) {}
+            }
 
             // Log outgoing message to history
             await db.run(
               `INSERT INTO messages (user_id, contact_id, sender_phone, recipient_phone, text, direction)
                VALUES (?, ?, ?, ?, ?, 'outgoing')`,
-              [userId, contact.id, sock.user.id.split(':')[0], phone, responseText]
+              [userId, contact.id, sock.user.id.split(':')[0], phone, cleanedResponse]
             );
           }
         } catch (aiErr) {
           console.error(`AI execution failed for user ${userId}:`, aiErr);
         }
       }
-    }
   });
 
   return sessionObj;
@@ -306,4 +400,46 @@ export async function sendBroadcast(userId, contactsList, textMessage) {
       console.error(`Failed to send broadcast message to ${contact.phone_number}:`, err);
     }
   }
+}
+
+// Abandoned Cart Scheduler
+export function startAbandonedCartScheduler() {
+  console.log("Abandoned Cart Scheduler Initialized successfully.");
+  setInterval(async () => {
+    const db = getDb();
+    try {
+      // Find carts modified more than 30 minutes ago, where reminder_sent = 0
+      const dateLimit = new Date(Date.now() - 30 * 60 * 1000).toISOString().slice(0, 19).replace('T', ' ');
+      const carts = await db.all(
+        `SELECT c.*, co.phone_number, co.user_id as merchant_id 
+         FROM carts c 
+         JOIN contacts co ON c.contact_id = co.id 
+         WHERE c.reminder_sent = 0 AND c.last_activity <= ?`,
+        [dateLimit]
+      );
+      
+      for (const cart of carts) {
+        const session = activeSessions.get(cart.merchant_id);
+        if (session && session.status === 'connected') {
+          const formattedJid = `${cart.phone_number}@s.whatsapp.net`;
+          const reminderText = `Habari! Tuliona ulikuwa unaongeza bidhaa kwenye kikapu chako hivi karibuni lakini haujakamilisha oda yako. Je, unahitaji msaada wowote kukamilisha ununuzi wako? Tunafurahi kukusaidia! 😊`;
+          
+          await session.sock.sendMessage(formattedJid, { text: reminderText });
+          
+          // Log message
+          await db.run(
+            `INSERT INTO messages (user_id, contact_id, sender_phone, recipient_phone, text, direction)
+             VALUES (?, ?, ?, ?, ?, 'outgoing')`,
+            [cart.merchant_id, cart.contact_id, session.sock.user.id.split(':')[0], cart.phone_number, reminderText]
+          );
+          
+          // Update cart status
+          await db.run('UPDATE carts SET reminder_sent = 1 WHERE id = ?', [cart.id]);
+          console.log(`Sent abandoned cart reminder to ${cart.phone_number}`);
+        }
+      }
+    } catch (err) {
+      console.error("Error in Abandoned Cart Scheduler:", err);
+    }
+  }, 5 * 60 * 1000); // Check every 5 minutes
 }

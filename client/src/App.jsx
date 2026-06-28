@@ -59,6 +59,7 @@ export default function App() {
     model: 'gemini-2.0-flash',
     api_key: '',
     system_prompt: '',
+    support_prompt: '',
     temperature: 0.7,
     enabled: 0
   });
@@ -101,6 +102,9 @@ export default function App() {
   const [coupons, setCoupons] = useState([]);
   const [couponForm, setCouponForm] = useState({ code: '', discount_type: 'fixed', value: '', active: 1 });
   const [selectedCoupon, setSelectedCoupon] = useState(null);
+
+  // Cart States
+  const [carts, setCarts] = useState([]);
 
   // Fetch current user details on mount/token change
   useEffect(() => {
@@ -526,11 +530,23 @@ export default function App() {
     }
   };
 
-  // Run catalog/coupon fetchers
+  const fetchCarts = async () => {
+    try {
+      const data = await apiFetch('/api/carts');
+      setCarts(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Run catalog/coupon/cart fetchers
   useEffect(() => {
     if (!token) return;
     if (activeTab === 'catalog') fetchCatalog();
     if (activeTab === 'coupons') fetchCoupons();
+    if (activeTab === 'dashboard') {
+      fetchCarts();
+    }
   }, [activeTab, token]);
 
   // Filtered contacts list
@@ -781,6 +797,35 @@ export default function App() {
                 <button className="btn btn-outline" onClick={() => setActiveTab('whatsapp')}>{t.whatsappConnection}</button>
               </div>
             </div>
+
+            <div className="content-card mt-3">
+              <h2>Vikapu Vinavyofuatiliwa na AI (Abandoned Carts / Retargeting)</h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '15px' }}>
+                Wateja wanaoanza ku-order lakini wakaishia njiani. Mfumo utawatumia ukumbusho kiotomatiki baada ya dakika 30.
+              </p>
+              {carts.length === 0 ? (
+                <p style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)' }}>Hakuna vikapu amilifu vinavyofuatiliwa kwa sasa.</p>
+              ) : (
+                <div className="logs-list" style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                  {carts.map(c => (
+                    <div key={c.id} className="log-item" style={{ marginBottom: '8px', padding: '12px' }}>
+                      <div className="log-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h4 style={{ margin: 0 }}>{c.contact_name || 'Mteja'} (+{c.contact_phone})</h4>
+                        <span className={`badge badge-${c.reminder_sent === 1 ? 'completed' : 'pending'}`}>
+                          {c.reminder_sent === 1 ? 'Ukumbusho Umetumwa' : 'Inasubiri (Active)'}
+                        </span>
+                      </div>
+                      <p className="log-text" style={{ fontSize: '0.85rem', margin: '5px 0' }}>
+                        <strong>Ujumbe wa Mwisho:</strong> {c.cart_data}
+                      </p>
+                      <span className="log-time" style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                        Kupitiwa Mwisho: {new Date(c.last_activity).toLocaleString()}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -888,6 +933,16 @@ export default function App() {
                     rows={6}
                     value={aiConfig.system_prompt}
                     onChange={e => setAiConfig({ ...aiConfig, system_prompt: e.target.value })}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>{t.supportPrompt}</label>
+                  <textarea 
+                    rows={6}
+                    value={aiConfig.support_prompt || ''}
+                    onChange={e => setAiConfig({ ...aiConfig, support_prompt: e.target.value })}
+                    placeholder="Maagizo maalum ya Msaidizi wa Malalamiko na Support..."
                   />
                 </div>
 

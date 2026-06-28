@@ -2,7 +2,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
 
-export async function askAI(prompt, systemPrompt, config) {
+export async function askAI(prompt, systemPrompt, config, audioBase64 = null) {
   const { provider, model, api_key, temperature } = config;
   const activeApiKey = api_key || getPlatformApiKey(provider);
 
@@ -13,7 +13,7 @@ export async function askAI(prompt, systemPrompt, config) {
   try {
     switch (provider) {
       case 'gemini':
-        return await callGemini(prompt, systemPrompt, activeApiKey, model, temperature);
+        return await callGemini(prompt, systemPrompt, activeApiKey, model, temperature, audioBase64);
       case 'openai':
         return await callOpenAI(prompt, systemPrompt, activeApiKey, model, temperature);
       case 'claude':
@@ -39,14 +39,25 @@ function getPlatformApiKey(provider) {
   }
 }
 
-async function callGemini(prompt, systemPrompt, apiKey, model = 'gemini-2.0-flash', temperature = 0.7) {
+async function callGemini(prompt, systemPrompt, apiKey, model = 'gemini-2.0-flash', temperature = 0.7, audioBase64 = null) {
   const genAI = new GoogleGenerativeAI(apiKey);
   const aiModel = genAI.getGenerativeModel({
     model: model || 'gemini-2.0-flash',
     systemInstruction: systemPrompt
   });
+  
+  const parts = [{ text: prompt }];
+  if (audioBase64) {
+    parts.unshift({
+      inlineData: {
+        data: audioBase64,
+        mimeType: 'audio/ogg; codecs=opus'
+      }
+    });
+  }
+
   const result = await aiModel.generateContent({
-    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    contents: [{ role: 'user', parts: parts }],
     generationConfig: { temperature: temperature }
   });
   return result.response.text();

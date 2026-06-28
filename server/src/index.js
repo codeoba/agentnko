@@ -9,7 +9,8 @@ import {
   stopWhatsappSession, 
   getSession, 
   initAllSessions,
-  sendBroadcast 
+  sendBroadcast,
+  startAbandonedCartScheduler 
 } from './services/whatsappManager.js';
 import { askAI } from './services/aiService.js';
 import { initiatePayment, getPaymentStatus } from './services/paymentService.js';
@@ -55,6 +56,9 @@ Jibu kwa ufupi, ukitumia emoji zenye staha.', 0)`,
 
   // Restore previously active WhatsApp connections
   await initAllSessions();
+
+  // Start Background Scheduler for Abandoned Cart Recovery
+  startAbandonedCartScheduler();
 
   app.listen(PORT, () => {
     console.log(`AgentNKO Backend running on http://localhost:${PORT}`);
@@ -198,7 +202,7 @@ app.get('/api/config/ai', authenticateToken, async (req, res) => {
     let config = await db.get('SELECT * FROM ai_configs WHERE user_id = ?', [req.user.id]);
     if (!config) {
       await db.run(
-        `INSERT INTO ai_configs (user_id, provider, model, enabled) VALUES (?, 'gemini', 'gemini-1.5-flash', 0)`,
+        `INSERT INTO ai_configs (user_id, provider, model, enabled) VALUES (?, 'gemini', 'gemini-2.0-flash', 0)`,
         [req.user.id]
       );
       config = await db.get('SELECT * FROM ai_configs WHERE user_id = ?', [req.user.id]);
@@ -210,23 +214,24 @@ app.get('/api/config/ai', authenticateToken, async (req, res) => {
 });
 
 app.post('/api/config/ai', authenticateToken, async (req, res) => {
-  const { provider, model, api_key, system_prompt, temperature, enabled } = req.body;
+  const { provider, model, api_key, system_prompt, support_prompt, temperature, enabled } = req.body;
   const db = getDb();
   try {
     await db.run(
-      `INSERT INTO ai_configs (user_id, provider, model, api_key, system_prompt, temperature, enabled, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      `INSERT INTO ai_configs (user_id, provider, model, api_key, system_prompt, support_prompt, temperature, enabled, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
        ON CONFLICT(user_id) DO UPDATE SET 
         provider = ?, 
         model = ?, 
         api_key = COALESCE(?, api_key), 
         system_prompt = ?, 
+        support_prompt = ?, 
         temperature = ?, 
         enabled = ?, 
         updated_at = CURRENT_TIMESTAMP`,
       [
-        req.user.id, provider, model, api_key, system_prompt, temperature, enabled,
-        provider, model, api_key, system_prompt, temperature, enabled
+        req.user.id, provider, model, api_key, system_prompt, support_prompt, temperature, enabled,
+        provider, model, api_key, system_prompt, support_prompt, temperature, enabled
       ]
     );
     res.json({ message: 'AI configuration updated successfully.' });
@@ -580,6 +585,23 @@ app.delete('/api/coupons/:id', authenticateToken, async (req, res) => {
   try {
     await db.run('DELETE FROM coupons WHERE id = ? AND user_id = ?', [req.params.id, req.user.id]);
     res.json({ success: true, message: 'Coupon deleted successfully.' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/carts', authenticateToken, async (req, res) => {
+  const db = getDb();
+  try {
+    const carts = await db.all(
+      `SELECT c.*, co.name as contact_name, co.phone_number as contact_phone 
+       FROM carts c 
+       JOIN contacts co ON c.contact_id = co.id 
+       WHERE c.user_id = ? 
+       ORDER BY c.last_activity DESC`,
+      [req.user.id]
+    );
+    res.json(carts);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
