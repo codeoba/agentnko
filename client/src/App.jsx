@@ -32,8 +32,11 @@ import {
   ShoppingBag,
   FileText,
   MoreVertical,
-  RefreshCw
+  RefreshCw,
+  Cpu,
+  PlayCircle
 } from 'lucide-react';
+
 
 export default function App() {
   const [lang, setLang] = useState('sw');
@@ -126,6 +129,21 @@ export default function App() {
   });
   const [wooSaveMsg, setWooSaveMsg] = useState('');
   const [isSyncingWoo, setIsSyncingWoo] = useState(false);
+
+  // Automations States
+  const [automations, setAutomations] = useState([]);
+  const [showAddAutomation, setShowAddAutomation] = useState(false);
+  const [selectedAutomation, setSelectedAutomation] = useState(null);
+  const [automationForm, setAutomationForm] = useState({
+    name: '',
+    description: '',
+    trigger_type: 'message_received',
+    condition_type: 'contains',
+    condition_value: '',
+    action_type: 'send_message',
+    action_value: '',
+    active: 1
+  });
 
   // Fetch current user details on mount/token change
   useEffect(() => {
@@ -596,11 +614,70 @@ export default function App() {
     }
   };
 
+  const fetchAutomations = async () => {
+    try {
+      const data = await apiFetch('/api/automations');
+      setAutomations(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleSaveAutomation = async (e) => {
+    e.preventDefault();
+    try {
+      const payload = selectedAutomation ? { ...automationForm, id: selectedAutomation.id } : automationForm;
+      await apiFetch('/api/automations', {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+      setShowAddAutomation(false);
+      setSelectedAutomation(null);
+      setAutomationForm({
+        name: '',
+        description: '',
+        trigger_type: 'message_received',
+        condition_type: 'contains',
+        condition_value: '',
+        action_type: 'send_message',
+        action_value: '',
+        active: 1
+      });
+      fetchAutomations();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleDeleteAutomation = async (id) => {
+    if (!confirm('Are you sure you want to delete this rule?')) return;
+    try {
+      await apiFetch(`/api/automations/${id}`, { method: 'DELETE' });
+      fetchAutomations();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleToggleAutomation = async (id, currentActive) => {
+    const nextActive = currentActive === 1 ? 0 : 1;
+    try {
+      await apiFetch(`/api/automations/${id}/toggle`, {
+        method: 'POST',
+        body: JSON.stringify({ active: nextActive })
+      });
+      fetchAutomations();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
   // Run catalog/coupon/cart fetchers
   useEffect(() => {
     if (!token) return;
     if (activeTab === 'catalog') fetchCatalog();
     if (activeTab === 'coupons') fetchCoupons();
+    if (activeTab === 'automations') fetchAutomations();
     if (activeTab === 'dashboard') {
       fetchCarts();
     }
@@ -741,6 +818,14 @@ export default function App() {
           </button>
 
           <button 
+            className={`nav-item ${activeTab === 'automations' ? 'active' : ''}`}
+            onClick={() => setActiveTab('automations')}
+          >
+            <Cpu size={20} />
+            <span>Automations</span>
+          </button>
+
+          <button 
             className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`}
             onClick={() => setActiveTab('settings')}
           >
@@ -872,6 +957,275 @@ export default function App() {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* TAB: AUTOMATION FLOWS */}
+        {activeTab === 'automations' && (
+          <div className="tab-pane">
+            <div className="pane-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h1>Automation Flows</h1>
+                <p>Create and manage conversation flows with rule-based automated responses.</p>
+              </div>
+              <button 
+                type="button" 
+                className="btn btn-primary" 
+                onClick={() => {
+                  setSelectedAutomation(null);
+                  setAutomationForm({
+                    name: '',
+                    description: '',
+                    trigger_type: 'message_received',
+                    condition_type: 'contains',
+                    condition_value: '',
+                    action_type: 'send_message',
+                    action_value: '',
+                    active: 1
+                  });
+                  setShowAddAutomation(true);
+                }}
+              >
+                <Plus size={16} />
+                Create New Flow
+              </button>
+            </div>
+
+            {/* Automation Statistics Cards */}
+            <div className="grid grid-3 mb-4">
+              <div className="stats-card">
+                <Cpu size={24} className="card-icon text-primary" />
+                <h3>{automations.length}</h3>
+                <p>Total Flows</p>
+              </div>
+
+              <div className="stats-card">
+                <PlayCircle size={24} className="card-icon text-success" />
+                <h3>{automations.filter(a => a.active === 1).length}</h3>
+                <p>Active Flows</p>
+              </div>
+
+              <div className="stats-card">
+                <CheckCircle size={24} className="card-icon text-warning" />
+                <h3>{automations.reduce((acc, curr) => acc + (curr.runs_count || 0), 0)}</h3>
+                <p>Total Executions</p>
+              </div>
+            </div>
+
+            {/* Automations Grid */}
+            {automations.length === 0 ? (
+              <div className="content-card center-card" style={{ padding: '40px', textAlign: 'center' }}>
+                <Cpu size={48} style={{ color: 'var(--text-muted)', marginBottom: '15px' }} />
+                <h3>No Automation Flows Found</h3>
+                <p style={{ color: 'var(--text-muted)', marginBottom: '20px' }}>Create custom rules to trigger replies, tagging, or AI routing on customer interactions.</p>
+                <button 
+                  className="btn btn-primary"
+                  onClick={() => setShowAddAutomation(true)}
+                >
+                  Create Your First Flow
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-3">
+                {automations.map(a => (
+                  <div key={a.id} className="content-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '230px' }}>
+                    <div>
+                      <div className="log-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: a.active === 1 ? '#10b981' : '#ef4444' }}></span>
+                          <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: '600' }}>{a.name}</h4>
+                        </div>
+                        <label className="toggle-switch">
+                          <input 
+                            type="checkbox"
+                            checked={a.active === 1}
+                            onChange={() => handleToggleAutomation(a.id, a.active)}
+                          />
+                          <span className="slider"></span>
+                        </label>
+                      </div>
+
+                      <p className="log-text" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '12px' }}>
+                        {a.description || 'No description provided.'}
+                      </p>
+
+                      <div className="badges-row" style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '12px' }}>
+                        <span className="badge badge-pending" style={{ fontSize: '0.75rem' }}>{a.trigger_type}</span>
+                        {a.condition_type !== 'always' && (
+                          <span className="badge badge-failed" style={{ fontSize: '0.75rem' }}>
+                            {a.condition_type}: "{a.condition_value}"
+                          </span>
+                        )}
+                        <span className="badge badge-completed" style={{ fontSize: '0.75rem' }}>
+                          {a.action_type === 'send_message' ? 'reply' : a.action_type}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                        <strong>{a.runs_count || 0}</strong> runs
+                      </span>
+                      <div className="button-group" style={{ display: 'flex', gap: '8px' }}>
+                        <button 
+                          className="btn btn-outline" 
+                          style={{ padding: '4px 8px', fontSize: '0.75rem' }}
+                          onClick={() => {
+                            setSelectedAutomation(a);
+                            setAutomationForm({
+                              name: a.name,
+                              description: a.description || '',
+                              trigger_type: a.trigger_type,
+                              condition_type: a.condition_type,
+                              condition_value: a.condition_value || '',
+                              action_type: a.action_type,
+                              action_value: a.action_value || '',
+                              active: a.active
+                            });
+                            setShowAddAutomation(true);
+                          }}
+                        >
+                          Edit
+                        </button>
+                        <button 
+                          className="btn btn-danger" 
+                          style={{ padding: '4px 8px', fontSize: '0.75rem' }}
+                          onClick={() => handleDeleteAutomation(a.id)}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Create/Edit Flow Modal */}
+            {showAddAutomation && (
+              <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
+                <div className="content-card" style={{ width: '550px', maxHeight: '90vh', overflowY: 'auto' }}>
+                  <h2>{selectedAutomation ? 'Edit Automation Flow' : 'Create New Automation Flow'}</h2>
+                  <form onSubmit={handleSaveAutomation}>
+                    
+                    <div className="form-group">
+                      <label>Flow Name *</label>
+                      <input 
+                        type="text" 
+                        required 
+                        placeholder="e.g. Welcome Message, Lead Tagging"
+                        value={automationForm.name}
+                        onChange={e => setAutomationForm({ ...automationForm, name: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label>Description</label>
+                      <input 
+                        type="text" 
+                        placeholder="e.g. Runs when users ask for details"
+                        value={automationForm.description}
+                        onChange={e => setAutomationForm({ ...automationForm, description: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="grid grid-2">
+                      <div className="form-group">
+                        <label>Trigger Event *</label>
+                        <select 
+                          value={automationForm.trigger_type}
+                          onChange={e => setAutomationForm({ ...automationForm, trigger_type: e.target.value })}
+                        >
+                          <option value="message_received">Incoming Message</option>
+                          <option value="new_conversation">New Conversation</option>
+                        </select>
+                      </div>
+
+                      <div className="form-group">
+                        <label>Condition Match *</label>
+                        <select 
+                          value={automationForm.condition_type}
+                          onChange={e => setAutomationForm({ ...automationForm, condition_type: e.target.value })}
+                        >
+                          <option value="contains">Contains Keyword</option>
+                          <option value="equals">Equals Exactly</option>
+                          <option value="starts_with">Starts With</option>
+                          <option value="always">Always Run</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {automationForm.condition_type !== 'always' && (
+                      <div className="form-group">
+                        <label>Trigger Keyword / Phrase *</label>
+                        <input 
+                          type="text" 
+                          required 
+                          placeholder="e.g. price, habari, help"
+                          value={automationForm.condition_value}
+                          onChange={e => setAutomationForm({ ...automationForm, condition_value: e.target.value })}
+                        />
+                      </div>
+                    )}
+
+                    <div className="form-group">
+                      <label>Action Event *</label>
+                      <select 
+                        value={automationForm.action_type}
+                        onChange={e => setAutomationForm({ ...automationForm, action_type: e.target.value })}
+                      >
+                        <option value="send_message">Send Reply Message</option>
+                        <option value="add_tag">Add Tag to Contact</option>
+                        <option value="remove_tag">Remove Tag from Contact</option>
+                        <option value="disable_ai">Mute / Disable AI Responder</option>
+                        <option value="enable_ai">Unmute / Enable AI Responder</option>
+                      </select>
+                    </div>
+
+                    {(automationForm.action_type === 'send_message' || automationForm.action_type === 'add_tag' || automationForm.action_type === 'remove_tag') && (
+                      <div className="form-group">
+                        <label>
+                          {automationForm.action_type === 'send_message' ? 'Reply Payload *' : 'Tag Value *'}
+                        </label>
+                        {automationForm.action_type === 'send_message' ? (
+                          <textarea 
+                            rows={4} 
+                            required 
+                            placeholder="Type reply message text here..."
+                            value={automationForm.action_value}
+                            onChange={e => setAutomationForm({ ...automationForm, action_value: e.target.value })}
+                          />
+                        ) : (
+                          <input 
+                            type="text" 
+                            required 
+                            placeholder="e.g. hot-lead, support"
+                            value={automationForm.action_value}
+                            onChange={e => setAutomationForm({ ...automationForm, action_value: e.target.value })}
+                          />
+                        )}
+                      </div>
+                    )}
+
+                    <div className="button-group mt-3" style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                      <button 
+                        type="button" 
+                        className="btn btn-outline" 
+                        onClick={() => {
+                          setShowAddAutomation(false);
+                          setSelectedAutomation(null);
+                        }}
+                      >
+                        Cancel
+                      </button>
+                      <button type="submit" className="btn btn-primary">
+                        Save Flow
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

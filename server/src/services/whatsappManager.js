@@ -205,9 +205,68 @@ export async function startWhatsappSession(userId) {
         [userId, contact.id, phone, sock.user.id.split(':')[0], text]
       );
 
+      // Evaluate Rules Engine Automations
+      let ruleBypassedAI = false;
+      try {
+        const activeRules = await db.all('SELECT * FROM automations WHERE user_id = ? AND active = 1', [userId]);
+        for (const rule of activeRules) {
+          if (rule.trigger_type === 'message_received') {
+            let matched = false;
+            const msgLower = text.toLowerCase().trim();
+            const valLower = (rule.condition_value || '').toLowerCase().trim();
+
+            if (rule.condition_type === 'always') {
+              matched = true;
+            } else if (rule.condition_type === 'equals' && msgLower === valLower) {
+              matched = true;
+            } else if (rule.condition_type === 'contains' && msgLower.includes(valLower)) {
+              matched = true;
+            } else if (rule.condition_type === 'starts_with' && msgLower.startsWith(valLower)) {
+              matched = true;
+            }
+
+            if (matched) {
+              console.log(`Automation Rule "${rule.name}" triggered for message: "${text}"`);
+              
+              if (rule.action_type === 'send_message') {
+                await sock.sendMessage(phone + '@s.whatsapp.net', { text: rule.action_value });
+                await db.run(
+                  `INSERT INTO messages (user_id, contact_id, sender_phone, recipient_phone, text, direction)
+                   VALUES (?, ?, ?, ?, ?, 'outgoing')`,
+                  [userId, contact.id, sock.user.id.split(':')[0], phone, rule.action_value]
+                );
+                ruleBypassedAI = true;
+              } else if (rule.action_type === 'add_tag') {
+                let tagsArray = contact.tags ? contact.tags.split(',').map(t => t.trim()) : [];
+                if (!tagsArray.includes(rule.action_value)) {
+                  tagsArray.push(rule.action_value);
+                  await db.run('UPDATE contacts SET tags = ? WHERE id = ?', [tagsArray.join(', '), contact.id]);
+                  contact.tags = tagsArray.join(', ');
+                }
+              } else if (rule.action_type === 'remove_tag') {
+                let tagsArray = contact.tags ? contact.tags.split(',').map(t => t.trim()) : [];
+                tagsArray = tagsArray.filter(t => t !== rule.action_value);
+                await db.run('UPDATE contacts SET tags = ? WHERE id = ?', [tagsArray.join(', '), contact.id]);
+                contact.tags = tagsArray.join(', ');
+              } else if (rule.action_type === 'disable_ai') {
+                await db.run('UPDATE contacts SET ai_disabled = 1 WHERE id = ?', [contact.id]);
+                contact.ai_disabled = 1;
+              } else if (rule.action_type === 'enable_ai') {
+                await db.run('UPDATE contacts SET ai_disabled = 0 WHERE id = ?', [contact.id]);
+                contact.ai_disabled = 0;
+              }
+
+              await db.run('UPDATE automations SET runs_count = runs_count + 1 WHERE id = ?', [rule.id]);
+            }
+          }
+        }
+      } catch (ruleErr) {
+        console.error('Error evaluating automation rules:', ruleErr);
+      }
+
       // 3. Trigger AI agent if configuration enabled and not disabled for this contact
       const aiConfig = await db.get('SELECT * FROM ai_configs WHERE user_id = ?', [userId]);
-      if (aiConfig && aiConfig.enabled === 1 && contact.ai_disabled !== 1) {
+      if (aiConfig && aiConfig.enabled === 1 && contact.ai_disabled !== 1 && !ruleBypassedAI) {
         // Fetch recent message history for context
         const history = await db.all(
           `SELECT text, direction FROM messages 

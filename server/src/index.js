@@ -288,8 +288,70 @@ app.post('/api/config/woocommerce/sync', authenticateToken, async (req, res) => 
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+// ================= AUTOMATIONS ROUTES =================
+
+app.get('/api/automations', authenticateToken, async (req, res) => {
+  const db = getDb();
+  try {
+    const automations = await db.all('SELECT * FROM automations WHERE user_id = ? ORDER BY created_at DESC', [req.user.id]);
+    res.json(automations);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
+app.post('/api/automations', authenticateToken, async (req, res) => {
+  const { id, name, description, trigger_type, condition_type, condition_value, action_type, action_value, active } = req.body;
+  const db = getDb();
+  try {
+    if (id) {
+      await db.run(
+        `UPDATE automations SET
+          name = ?,
+          description = ?,
+          trigger_type = ?,
+          condition_type = ?,
+          condition_value = ?,
+          action_type = ?,
+          action_value = ?,
+          active = ?
+         WHERE id = ? AND user_id = ?`,
+        [name, description, trigger_type, condition_type, condition_value, action_type, action_value, active, id, req.user.id]
+      );
+      res.json({ success: true, message: 'Automation rule updated.' });
+    } else {
+      await db.run(
+        `INSERT INTO automations (user_id, name, description, trigger_type, condition_type, condition_value, action_type, action_value, active)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [req.user.id, name, description, trigger_type, condition_type, condition_value, action_type, action_value, active]
+      );
+      res.json({ success: true, message: 'Automation rule created.' });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/automations/:id', authenticateToken, async (req, res) => {
+  const db = getDb();
+  try {
+    await db.run('DELETE FROM automations WHERE id = ? AND user_id = ?', [req.params.id, req.user.id]);
+    res.json({ success: true, message: 'Automation rule deleted.' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/automations/:id/toggle', authenticateToken, async (req, res) => {
+  const { active } = req.body;
+  const db = getDb();
+  try {
+    await db.run('UPDATE automations SET active = ? WHERE id = ? AND user_id = ?', [active, req.params.id, req.user.id]);
+    res.json({ success: true, message: 'Automation status toggled.' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // ================= CRM ROUTES =================
 

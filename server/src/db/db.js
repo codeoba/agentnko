@@ -153,6 +153,22 @@ Jibu kwa ufupi, ukitumia emoji zenye staha.',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
+
+    CREATE TABLE IF NOT EXISTS automations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      name TEXT NOT NULL,
+      description TEXT,
+      trigger_type TEXT NOT NULL,
+      condition_type TEXT NOT NULL,
+      condition_value TEXT,
+      action_type TEXT NOT NULL,
+      action_value TEXT,
+      active INTEGER DEFAULT 1,
+      runs_count INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
   `);
 
   console.log('SQLite Database initialized successfully.');
