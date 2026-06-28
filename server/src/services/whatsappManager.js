@@ -14,6 +14,7 @@ import { getDb } from '../db/db.js';
 import { askAI } from './aiService.js';
 import { generateReceiptPdf } from './receiptService.js';
 import { createWooCommerceOrder } from './wooService.js';
+import { sendWhatsAppMessage } from './whatsappService.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const sessionsDir = path.resolve(__dirname, '../../sessions');
@@ -229,7 +230,7 @@ export async function startWhatsappSession(userId) {
               console.log(`Automation Rule "${rule.name}" triggered for message: "${text}"`);
               
               if (rule.action_type === 'send_message') {
-                await sock.sendMessage(phone + '@s.whatsapp.net', { text: rule.action_value });
+                await sendWhatsAppMessage(userId, phone, rule.action_value);
                 await db.run(
                   `INSERT INTO messages (user_id, contact_id, sender_phone, recipient_phone, text, direction)
                    VALUES (?, ?, ?, ?, ?, 'outgoing')`,
@@ -390,17 +391,14 @@ export async function startWhatsappSession(userId) {
               }
             }
 
-            // Send reply
-            await sock.sendMessage(remoteJid, { text: cleanedResponse });
+            // Send reply (with dynamic pdf document attachment if generated)
+            await sendWhatsAppMessage(userId, phone, cleanedResponse, {
+              documentPath: receiptPath,
+              fileName: `Stakabadhi_Order_${phone}.pdf`
+            });
 
-            // If PDF receipt was generated, send it!
+            // Delete temp file after sending
             if (receiptPath && fs.existsSync(receiptPath)) {
-              await sock.sendMessage(remoteJid, {
-                document: fs.readFileSync(receiptPath),
-                mimetype: 'application/pdf',
-                fileName: `Stakabadhi_Order_${phone}.pdf`
-              });
-              // Delete temp file after sending
               try {
                 fs.unlinkSync(receiptPath);
               } catch (_) {}
@@ -449,27 +447,34 @@ export function getSession(userId) {
 
 // Bulk sender with random delays to prevent banning
 export async function sendBroadcast(userId, contactsList, textMessage) {
-  const session = activeSessions.get(userId);
-  if (!session || session.status !== 'connected') {
-    throw new Error('WhatsApp session is not connected');
+  const db = getDb();
+  
+  const config = await db.get(
+    'SELECT gateway_type FROM whatsapp_gateway_configs WHERE user_id = ?',
+    [userId]
+  );
+  const gatewayType = config ? config.gateway_type : 'baileys';
+
+  if (gatewayType === 'baileys') {
+    const session = activeSessions.get(userId);
+    if (!session || session.status !== 'connected') {
+      throw new Error('WhatsApp session is not connected');
+    }
   }
 
-  const db = getDb();
-
   for (const contact of contactsList) {
-    const formattedJid = `${contact.phone_number}@s.whatsapp.net`;
     try {
-      // Send message
-      await session.sock.sendMessage(formattedJid, { text: textMessage });
+      // Send message using active gateway
+      await sendWhatsAppMessage(userId, contact.phone_number, textMessage);
 
       // Log to database
       await db.run(
         `INSERT INTO messages (user_id, contact_id, sender_phone, recipient_phone, text, direction)
          VALUES (?, ?, ?, ?, ?, 'outgoing')`,
-        [userId, contact.id, session.sock.user.id.split(':')[0], contact.phone_number, textMessage]
+        [userId, contact.id, gatewayType === 'baileys' ? activeSessions.get(userId).sock.user.id.split(':')[0] : 'meta', contact.phone_number, textMessage]
       );
 
-      // Random delay between 3 and 7 seconds to minimize ban risk
+      // Random delay to minimize ban risk
       const delay = Math.floor(Math.random() * 4000) + 3000;
       await new Promise(resolve => setTimeout(resolve, delay));
 
@@ -485,7 +490,6 @@ export function startAbandonedCartScheduler() {
   setInterval(async () => {
     const db = getDb();
     try {
-      // Find carts modified more than 30 minutes ago, where reminder_sent = 0
       const dateLimit = new Date(Date.now() - 30 * 60 * 1000).toISOString().slice(0, 19).replace('T', ' ');
       const carts = await db.all(
         `SELECT c.*, co.phone_number, co.user_id as merchant_id 
@@ -496,23 +500,34 @@ export function startAbandonedCartScheduler() {
       );
       
       for (const cart of carts) {
-        const session = activeSessions.get(cart.merchant_id);
-        if (session && session.status === 'connected') {
-          const formattedJid = `${cart.phone_number}@s.whatsapp.net`;
+        try {
+          const config = await db.get(
+            'SELECT gateway_type FROM whatsapp_gateway_configs WHERE user_id = ?',
+            [cart.merchant_id]
+          );
+          const gatewayType = config ? config.gateway_type : 'baileys';
+          
+          if (gatewayType === 'baileys') {
+            const session = activeSessions.get(cart.merchant_id);
+            if (!session || session.status !== 'connected') continue;
+          }
+          
           const reminderText = `Habari! Tuliona ulikuwa unaongeza bidhaa kwenye kikapu chako hivi karibuni lakini haujakamilisha oda yako. Je, unahitaji msaada wowote kukamilisha ununuzi wako? Tunafurahi kukusaidia! 😊`;
           
-          await session.sock.sendMessage(formattedJid, { text: reminderText });
+          await sendWhatsAppMessage(cart.merchant_id, cart.phone_number, reminderText);
           
           // Log message
           await db.run(
             `INSERT INTO messages (user_id, contact_id, sender_phone, recipient_phone, text, direction)
              VALUES (?, ?, ?, ?, ?, 'outgoing')`,
-            [cart.merchant_id, cart.contact_id, session.sock.user.id.split(':')[0], cart.phone_number, reminderText]
+            [cart.merchant_id, cart.contact_id, gatewayType === 'baileys' ? activeSessions.get(cart.merchant_id).sock.user.id.split(':')[0] : 'meta', cart.phone_number, reminderText]
           );
           
           // Update cart status
           await db.run('UPDATE carts SET reminder_sent = 1 WHERE id = ?', [cart.id]);
           console.log(`Sent abandoned cart reminder to ${cart.phone_number}`);
+        } catch (sendErr) {
+          console.error(`Failed to send abandoned cart reminder to ${cart.phone_number}:`, sendErr);
         }
       }
     } catch (err) {

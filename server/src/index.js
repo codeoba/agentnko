@@ -22,6 +22,7 @@ import { startScheduler, applySegmentFilters, createScheduledMessage } from './s
 import { generateApiKey, verifyApiKey, testWebhook, triggerWebhook, WEBHOOK_EVENTS } from './services/webhookService.js';
 import { createOrder, updateOrderStatus, getOrdersWithContacts, getOrderStats } from './services/orderService.js';
 import { seedDefaultTemplates } from './db/templateSeeds.js';
+import { sendWhatsAppMessage } from './services/whatsappService.js';
 
 dotenv.config();
 
@@ -1301,16 +1302,259 @@ app.post('/api/v1/messages/send', authenticateApiKey, async (req, res) => {
   }
 
   try {
-    const session = getSession(req.user.id);
-    if (!session || session.status !== 'connected') {
-      return res.status(503).json({ error: 'WhatsApp not connected' });
-    }
-
-    const jid = `${phone_number}@s.whatsapp.net`;
-    await session.sock.sendMessage(jid, { text: message });
+    await sendWhatsAppMessage(req.user.id, phone_number, message);
     res.json({ success: true, message: 'Message sent via API' });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// ================= GATEWAY CONFIG ROUTES (NEW) =================
+
+app.get('/api/config/whatsapp-gateway', authenticateToken, async (req, res) => {
+  const db = getDb();
+  try {
+    let config = await db.get(
+      'SELECT * FROM whatsapp_gateway_configs WHERE user_id = ?',
+      [req.user.id]
+    );
+    if (!config) {
+      await db.run(
+        'INSERT INTO whatsapp_gateway_configs (user_id, gateway_type) VALUES (?, ?)',
+        [req.user.id, 'baileys']
+      );
+      config = { user_id: req.user.id, gateway_type: 'baileys' };
+    }
+    res.json(config);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/config/whatsapp-gateway', authenticateToken, async (req, res) => {
+  const { gateway_type, meta_access_token, meta_phone_number_id, meta_waba_id, meta_verify_token } = req.body;
+  
+  if (!gateway_type || !['baileys', 'meta_api'].includes(gateway_type)) {
+    return res.status(400).json({ error: 'Invalid gateway_type' });
+  }
+
+  const db = getDb();
+  try {
+    await db.run(
+      `INSERT INTO whatsapp_gateway_configs 
+       (user_id, gateway_type, meta_access_token, meta_phone_number_id, meta_waba_id, meta_verify_token)
+       VALUES (?, ?, ?, ?, ?, ?)
+       ON CONFLICT(user_id) DO UPDATE SET
+         gateway_type = excluded.gateway_type,
+         meta_access_token = excluded.meta_access_token,
+         meta_phone_number_id = excluded.meta_phone_number_id,
+         meta_waba_id = excluded.meta_waba_id,
+         meta_verify_token = excluded.meta_verify_token`,
+      [req.user.id, gateway_type, meta_access_token || null, meta_phone_number_id || null, meta_waba_id || null, meta_verify_token || null]
+    );
+    res.json({ success: true, message: 'WhatsApp Gateway configuration updated.' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ================= META CLOUD WEBHOOK ROUTES (NEW) =================
+
+app.get('/api/webhook/whatsapp/:userId', async (req, res) => {
+  const userId = parseInt(req.params.userId);
+  const mode = req.query['hub.mode'];
+  const token = req.query['hub.verify_token'];
+  const challenge = req.query['hub.challenge'];
+
+  if (mode && token) {
+    const db = getDb();
+    const config = await db.get(
+      'SELECT meta_verify_token FROM whatsapp_gateway_configs WHERE user_id = ?',
+      [userId]
+    );
+
+    if (config && token === config.meta_verify_token) {
+      console.log(`Webhook verified successfully for user ${userId}`);
+      return res.status(200).send(challenge);
+    }
+  }
+  res.status(403).send('Verification failed');
+});
+
+app.post('/api/webhook/whatsapp/:userId', async (req, res) => {
+  const userId = parseInt(req.params.userId);
+  const body = req.body;
+
+  if (body.object === 'whatsapp_business_account') {
+    try {
+      const entry = body.entry?.[0];
+      const change = entry?.changes?.[0];
+      const value = change?.value;
+      const message = value?.messages?.[0];
+
+      if (message) {
+        const phone = message.from;
+        let text = '';
+        
+        if (message.type === 'text') {
+          text = message.text?.body;
+        } else if (message.type === 'audio') {
+          text = '[Customer sent a voice message]';
+        }
+
+        if (text) {
+          console.log(`Meta Webhook message from ${phone} to ${userId}: "${text}"`);
+          
+          const db = getDb();
+          let contact = await db.get(
+            'SELECT * FROM contacts WHERE user_id = ? AND phone_number = ?',
+            [userId, phone]
+          );
+
+          if (!contact) {
+            const contactName = value.contacts?.[0]?.profile?.name || phone;
+            await db.run(
+              `INSERT INTO contacts (user_id, phone_number, name, tags, notes, agent_mode)
+               VALUES (?, ?, ?, 'lead', '', 'sales')`,
+              [userId, phone, contactName]
+            );
+            contact = await db.get(
+              'SELECT * FROM contacts WHERE user_id = ? AND phone_number = ?',
+              [userId, phone]
+            );
+          }
+
+          // Opt-out handling
+          const optOutKeywords = ['stop', 'unsubscribe', 'acha', 'niache'];
+          if (optOutKeywords.includes(text.toLowerCase().trim())) {
+            await db.run('UPDATE contacts SET opt_out = 1, opt_out_at = CURRENT_TIMESTAMP WHERE id = ?', [contact.id]);
+            await db.run(
+              `INSERT INTO opt_outs (user_id, phone_number, reason) VALUES (?, ?, 'webhook_keyword')
+               ON CONFLICT(user_id, phone_number) DO NOTHING`,
+              [userId, phone]
+            );
+            await sendWhatsAppMessage(userId, phone, 'Umeondolewa kwenye orodha ya kupokea ujumbe. Kama unataka kurudi, wasiliana nasi.');
+            return res.sendStatus(200);
+          }
+
+          if (contact.opt_out === 1) {
+            return res.sendStatus(200);
+          }
+
+          // 2. Log message to history
+          await db.run(
+            `INSERT INTO messages (user_id, contact_id, sender_phone, recipient_phone, text, direction)
+             VALUES (?, ?, ?, ?, ?, 'incoming')`,
+            [userId, contact.id, phone, value.metadata?.display_phone_number || 'meta', text]
+          );
+
+          // Evaluate Rules engine
+          let ruleBypassedAI = false;
+          try {
+            const activeRules = await db.all('SELECT * FROM automations WHERE user_id = ? AND active = 1', [userId]);
+            for (const rule of activeRules) {
+              if (rule.trigger_type === 'message_received') {
+                let matched = false;
+                const msgLower = text.toLowerCase().trim();
+                const valLower = (rule.condition_value || '').toLowerCase().trim();
+
+                if (rule.condition_type === 'always') matched = true;
+                else if (rule.condition_type === 'equals' && msgLower === valLower) matched = true;
+                else if (rule.condition_type === 'contains' && msgLower.includes(valLower)) matched = true;
+                else if (rule.condition_type === 'starts_with' && msgLower.startsWith(valLower)) matched = true;
+
+                if (matched) {
+                  if (rule.action_type === 'send_message') {
+                    await sendWhatsAppMessage(userId, phone, rule.action_value);
+                    await db.run(
+                      `INSERT INTO messages (user_id, contact_id, sender_phone, recipient_phone, text, direction)
+                       VALUES (?, ?, ?, ?, ?, 'outgoing')`,
+                      [userId, contact.id, value.metadata?.display_phone_number || 'meta', phone, rule.action_value]
+                    );
+                    ruleBypassedAI = true;
+                  } else if (rule.action_type === 'add_tag') {
+                    let tagsArray = contact.tags ? contact.tags.split(',').map(t => t.trim()) : [];
+                    if (!tagsArray.includes(rule.action_value)) {
+                      tagsArray.push(rule.action_value);
+                      await db.run('UPDATE contacts SET tags = ? WHERE id = ?', [tagsArray.join(', '), contact.id]);
+                    }
+                  } else if (rule.action_type === 'disable_ai') {
+                    await db.run('UPDATE contacts SET ai_disabled = 1 WHERE id = ?', [contact.id]);
+                  } else if (rule.action_type === 'enable_ai') {
+                    await db.run('UPDATE contacts SET ai_disabled = 0 WHERE id = ?', [contact.id]);
+                  }
+                  await db.run('UPDATE automations SET runs_count = runs_count + 1 WHERE id = ?', [rule.id]);
+                }
+              }
+            }
+          } catch (rErr) {
+            console.error('Rules error:', rErr);
+          }
+
+          // 3. AI response
+          const aiConfig = await db.get('SELECT * FROM ai_configs WHERE user_id = ?', [userId]);
+          if (aiConfig && aiConfig.enabled === 1 && contact.ai_disabled !== 1 && !ruleBypassedAI) {
+            const history = await db.all(
+              `SELECT text, direction FROM messages WHERE user_id = ? AND contact_id = ? ORDER BY timestamp DESC LIMIT 5`,
+              [userId, contact.id]
+            );
+            const sortedHistory = history.reverse();
+            const promptContext = sortedHistory.map(h => `${h.direction === 'incoming' ? 'Customer' : 'Assistant'}: ${h.text}`).join('\n') + `\nAssistant:`;
+
+            const user = await db.get('SELECT plan, active_until FROM users WHERE id = ?', [userId]);
+            const isPlanActive = !user.active_until || new Date(user.active_until) > new Date();
+
+            if (isPlanActive) {
+              const products = await db.all('SELECT name, price, description, status FROM products WHERE user_id = ?', [userId]);
+              const coupons = await db.all('SELECT code, discount_type, value FROM coupons WHERE user_id = ? AND active = 1', [userId]);
+              
+              let dynamicContext = '\n\n';
+              if (products.length > 0) {
+                dynamicContext += 'ORODHA YA BIDHAA ZILIZOPO GHALANI NA BEI ZAKE:\n';
+                products.forEach(p => {
+                  dynamicContext += `- ${p.name}: Bei TZS ${p.price.toLocaleString()} (${p.description || ''}) - Hali: ${p.status === 'available' ? 'Ipo' : 'Imekwisha'}\n`;
+                });
+              }
+              if (coupons.length > 0) {
+                dynamicContext += '\nKUPONI ZA PUNGUZO ZILIZO HAI (COUPONS):\n';
+                coupons.forEach(c => {
+                  dynamicContext += `- Code: ${c.code} (${c.discount_type === 'percentage' ? c.value + '%' : c.value.toLocaleString() + ' TZS'} Off)\n`;
+                });
+              }
+
+              let activePrompt = aiConfig.system_prompt + dynamicContext;
+              const responseText = await askAI(promptContext, activePrompt, aiConfig);
+
+              if (responseText) {
+                let cleanedResponse = responseText;
+                
+                if (responseText.includes('[ROUTE: support]')) {
+                  cleanedResponse = responseText.replace('[ROUTE: support]', '').trim();
+                  await db.run("UPDATE contacts SET agent_mode = 'support' WHERE id = ?", [contact.id]);
+                } else if (responseText.includes('[ROUTE: sales]')) {
+                  cleanedResponse = responseText.replace('[ROUTE: sales]', '').trim();
+                  await db.run("UPDATE contacts SET agent_mode = 'sales' WHERE id = ?", [contact.id]);
+                }
+
+                await sendWhatsAppMessage(userId, phone, cleanedResponse);
+
+                await db.run(
+                  `INSERT INTO messages (user_id, contact_id, sender_phone, recipient_phone, text, direction)
+                   VALUES (?, ?, ?, ?, ?, 'outgoing')`,
+                  [userId, contact.id, value.metadata?.display_phone_number || 'meta', phone, cleanedResponse]
+                );
+              }
+            }
+          }
+        }
+      }
+      res.sendStatus(200);
+    } catch (err) {
+      console.error(err);
+      res.sendStatus(500);
+    }
+  } else {
+    res.sendStatus(404);
   }
 });
 

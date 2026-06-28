@@ -6,6 +6,7 @@
 
 import { getDb } from '../db/db.js';
 import { getSession } from './whatsappManager.js';
+import { sendWhatsAppMessage } from './whatsappService.js';
 
 let schedulerInterval = null;
 
@@ -74,14 +75,24 @@ async function sendScheduledMessage(scheduledMsg) {
       ['sending', scheduledMsg.id]
     );
 
-    const session = getSession(scheduledMsg.user_id);
-    if (!session || session.status !== 'connected') {
-      await db.run(
-        'UPDATE scheduled_messages SET status = ? WHERE id = ?',
-        ['failed', scheduledMsg.id]
-      );
-      console.log(`Scheduled msg ${scheduledMsg.id}: WhatsApp not connected for user ${scheduledMsg.user_id}`);
-      return;
+    // Check active gateway configuration
+    const config = await db.get(
+      'SELECT gateway_type FROM whatsapp_gateway_configs WHERE user_id = ?',
+      [scheduledMsg.user_id]
+    );
+    const gatewayType = config ? config.gateway_type : 'baileys';
+
+    let session = null;
+    if (gatewayType === 'baileys') {
+      session = getSession(scheduledMsg.user_id);
+      if (!session || session.status !== 'connected') {
+        await db.run(
+          'UPDATE scheduled_messages SET status = ? WHERE id = ?',
+          ['failed', scheduledMsg.id]
+        );
+        console.log(`Scheduled msg ${scheduledMsg.id}: WhatsApp not connected for user ${scheduledMsg.user_id}`);
+        return;
+      }
     }
 
     // Pata contacts wanaohusika
@@ -118,14 +129,14 @@ async function sendScheduledMessage(scheduledMsg) {
 
     for (const contact of contacts) {
       try {
-        const jid = `${contact.phone_number}@s.whatsapp.net`;
-        await session.sock.sendMessage(jid, { text: scheduledMsg.message });
+        // Send using active gateway
+        await sendWhatsAppMessage(scheduledMsg.user_id, contact.phone_number, scheduledMsg.message);
         
         // Log to messages
         await db.run(
           `INSERT INTO messages (user_id, contact_id, sender_phone, recipient_phone, text, direction)
            VALUES (?, ?, ?, ?, ?, 'outgoing')`,
-          [scheduledMsg.user_id, contact.id, session.sock.user?.id?.split(':')[0] || '', contact.phone_number, scheduledMsg.message]
+          [scheduledMsg.user_id, contact.id, gatewayType === 'baileys' ? session.sock.user?.id?.split(':')[0] : 'meta', contact.phone_number, scheduledMsg.message]
         );
         
         sentCount++;

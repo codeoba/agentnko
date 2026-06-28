@@ -342,6 +342,18 @@ export async function initDb() {
       UNIQUE(user_id, date),
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
+
+    -- Gateway configs: Switchable WhatsApp options (Baileys vs Meta API)
+    CREATE TABLE IF NOT EXISTS whatsapp_gateway_configs (
+      user_id INTEGER PRIMARY KEY,
+      gateway_type TEXT DEFAULT 'baileys',
+      meta_access_token TEXT,
+      meta_phone_number_id TEXT,
+      meta_waba_id TEXT,
+      meta_verify_token TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
   `);
 
   console.log('SQLite Database initialized successfully with all enterprise tables.');

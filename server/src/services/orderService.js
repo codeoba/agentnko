@@ -6,6 +6,7 @@
 
 import { getDb } from '../db/db.js';
 import { getSession } from './whatsappManager.js';
+import { sendWhatsAppMessage } from './whatsappService.js';
 import { triggerWebhook, WEBHOOK_EVENTS } from './webhookService.js';
 
 const ORDER_STATUS_LABELS = {
@@ -96,8 +97,23 @@ export async function updateOrderStatus(userId, orderId, newStatus, trackingNumb
     );
 
     if (contact) {
-      const session = getSession(userId);
-      if (session && session.status === 'connected') {
+      const config = await db.get(
+        'SELECT gateway_type FROM whatsapp_gateway_configs WHERE user_id = ?',
+        [userId]
+      );
+      const gatewayType = config ? config.gateway_type : 'baileys';
+
+      let session = null;
+      let isSendable = true;
+
+      if (gatewayType === 'baileys') {
+        session = getSession(userId);
+        if (!session || session.status !== 'connected') {
+          isSendable = false;
+        }
+      }
+
+      if (isSendable) {
         const statusLabel = ORDER_STATUS_LABELS[newStatus] || newStatus;
         let notificationMsg = `📦 *Hali ya Order #${order.order_number}*\n\n`;
         notificationMsg += `Hali mpya: *${statusLabel}*\n`;
@@ -115,13 +131,12 @@ export async function updateOrderStatus(userId, orderId, newStatus, trackingNumb
         }
 
         try {
-          const jid = `${contact.phone_number}@s.whatsapp.net`;
-          await session.sock.sendMessage(jid, { text: notificationMsg });
+          await sendWhatsAppMessage(userId, contact.phone_number, notificationMsg);
           
           await db.run(
             `INSERT INTO messages (user_id, contact_id, sender_phone, recipient_phone, text, direction)
              VALUES (?, ?, ?, ?, ?, 'outgoing')`,
-            [userId, contact.id, session.sock.user?.id?.split(':')[0] || '', contact.phone_number, notificationMsg]
+            [userId, contact.id, gatewayType === 'baileys' ? session.sock.user?.id?.split(':')[0] : 'meta', contact.phone_number, notificationMsg]
           );
           
           await db.run(

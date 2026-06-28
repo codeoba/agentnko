@@ -153,6 +153,16 @@ export default function App() {
 
   // Automations States
   const [automations, setAutomations] = useState([]);
+  
+  // WhatsApp Gateway States
+  const [gatewayConfig, setGatewayConfig] = useState({
+    gateway_type: 'baileys',
+    meta_access_token: '',
+    meta_phone_number_id: '',
+    meta_waba_id: '',
+    meta_verify_token: ''
+  });
+  const [gatewaySaveMsg, setGatewaySaveMsg] = useState('');
   const [showAddAutomation, setShowAddAutomation] = useState(false);
   const [selectedAutomation, setSelectedAutomation] = useState(null);
   const [automationForm, setAutomationForm] = useState({
@@ -320,6 +330,31 @@ export default function App() {
       });
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  // WhatsApp Gateway Config helpers
+  const fetchGatewayConfig = async () => {
+    try {
+      const data = await apiFetch('/api/config/whatsapp-gateway');
+      setGatewayConfig(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleSaveGatewayConfig = async (e) => {
+    e.preventDefault();
+    setGatewaySaveMsg('');
+    try {
+      await apiFetch('/api/config/whatsapp-gateway', {
+        method: 'POST',
+        body: JSON.stringify(gatewayConfig)
+      });
+      setGatewaySaveMsg('Settings saved successfully.');
+      setTimeout(() => setGatewaySaveMsg(''), 4000);
+    } catch (err) {
+      setGatewaySaveMsg('Error: ' + err.message);
     }
   };
 
@@ -703,7 +738,10 @@ export default function App() {
       fetchCarts();
     }
     if (activeTab === 'settings') {
-      if (settingsTab === 'whatsapp') fetchSessionStatus();
+      if (settingsTab === 'whatsapp') {
+        fetchSessionStatus();
+        fetchGatewayConfig();
+      }
       if (settingsTab === 'ai') fetchAIConfig();
       if (settingsTab === 'woocommerce') fetchWooConfig();
     }
@@ -1801,71 +1839,165 @@ export default function App() {
             {/* Sub-tab 1: WhatsApp Channels */}
             {settingsTab === 'whatsapp' && (
               <div>
-                <div className="channel-card">
-                  <div className="channel-card-body">
-                    <div className="channel-card-details">
-                      <h3>{wsStatus.phone_number ? `+${wsStatus.phone_number}` : 'No Active Channel'}</h3>
-                      <div className="channel-meta-row">
-                        <span>Channel Status:</span>
-                        <strong className={wsStatus.status === 'connected' ? 'text-success' : 'text-danger'}>
-                          {wsStatus.status === 'connected' ? 'Active' : 'Disconnected'}
-                        </strong>
+                <div className="content-card mb-4">
+                  <h2>WhatsApp Connection Mode</h2>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '16px' }}>
+                    Select whether to run self-hosted (using WhatsApp QR Code scan via Baileys) or using the official WhatsApp Business Cloud API (Meta).
+                  </p>
+                  
+                  <div className="gateway-selector-grid" style={{ display: 'flex', gap: '16px', marginBottom: '20px' }}>
+                    <button 
+                      type="button" 
+                      className={`btn ${gatewayConfig.gateway_type === 'baileys' ? 'btn-primary' : 'btn-secondary'}`}
+                      style={{ flex: 1 }}
+                      onClick={() => setGatewayConfig({ ...gatewayConfig, gateway_type: 'baileys' })}
+                    >
+                      🔌 Baileys Web Gateway (QR Code)
+                    </button>
+                    <button 
+                      type="button" 
+                      className={`btn ${gatewayConfig.gateway_type === 'meta_api' ? 'btn-primary' : 'btn-secondary'}`}
+                      style={{ flex: 1 }}
+                      onClick={() => setGatewayConfig({ ...gatewayConfig, gateway_type: 'meta_api' })}
+                    >
+                      🌐 Official Meta Cloud API
+                    </button>
+                  </div>
+
+                  <form onSubmit={handleSaveGatewayConfig}>
+                    {gatewaySaveMsg && (
+                      <div className={`alert ${gatewaySaveMsg.startsWith('Error') ? 'alert-danger' : 'alert-success'}`}>
+                        {gatewaySaveMsg}
                       </div>
-                      <div className="channel-meta-row">
-                        <span>Device Gateway:</span>
-                        <strong>Baileys Web Gateway (Coexistence Mode)</strong>
-                      </div>
-                      {wsStatus.phone_number && (
-                        <div className="channel-meta-row">
-                          <span>Webhook Delivery:</span>
-                          <strong className="text-success">Connected & Healthy</strong>
+                    )}
+
+                    {gatewayConfig.gateway_type === 'meta_api' ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                        <div className="form-group">
+                          <label>Access Token (Permanent User Token)</label>
+                          <input 
+                            type="password" 
+                            required
+                            placeholder="EAAG..."
+                            value={gatewayConfig.meta_access_token || ''}
+                            onChange={e => setGatewayConfig({ ...gatewayConfig, meta_access_token: e.target.value })}
+                          />
                         </div>
-                      )}
-                    </div>
-                    <div className="channel-actions-col">
-                      {wsStatus.status === 'disconnected' ? (
-                        <button className="btn btn-primary" onClick={handleConnectWhatsapp} disabled={isConnecting}>
-                          {isConnecting ? <Loader className="spin" size={16} /> : 'Connect Channel'}
-                        </button>
-                      ) : (
-                        <>
-                          <button className="btn btn-outline" onClick={handleConnectWhatsapp} disabled={isConnecting}>Reconnect</button>
-                          <button className="btn btn-danger" onClick={handleDisconnectWhatsapp}>Disconnect</button>
-                        </>
-                      )}
-                    </div>
-                  </div>
+                        <div className="grid grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                          <div className="form-group">
+                            <label>Phone Number ID</label>
+                            <input 
+                              type="text" 
+                              required
+                              placeholder="e.g. 10982348574928"
+                              value={gatewayConfig.meta_phone_number_id || ''}
+                              onChange={e => setGatewayConfig({ ...gatewayConfig, meta_phone_number_id: e.target.value })}
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label>WhatsApp Business Account ID (WABA ID)</label>
+                            <input 
+                              type="text" 
+                              required
+                              placeholder="e.g. 20984729487294"
+                              value={gatewayConfig.meta_waba_id || ''}
+                              onChange={e => setGatewayConfig({ ...gatewayConfig, meta_waba_id: e.target.value })}
+                            />
+                          </div>
+                        </div>
+                        <div className="form-group">
+                          <label>Verify Token (For Webhook Verification)</label>
+                          <input 
+                            type="text" 
+                            required
+                            placeholder="e.g. my_secret_token_123"
+                            value={gatewayConfig.meta_verify_token || ''}
+                            onChange={e => setGatewayConfig({ ...gatewayConfig, meta_verify_token: e.target.value })}
+                          />
+                        </div>
 
-                  {/* QR Code display */}
-                  {(wsStatus.status === 'disconnected' || wsStatus.status === 'qr') && wsStatus.qr_code && (
-                    <div className="qr-box" style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                      <p className="instruction">Scan this QR code using WhatsApp Link a Device:</p>
-                      <div className="qr-image-wrapper">
-                        <img src={wsStatus.qr_code} alt="WhatsApp Web QR Code" />
+                        <div className="alert alert-info mt-2" style={{ fontSize: '0.85rem', background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)', padding: '12px', borderRadius: '8px', color: 'var(--text-secondary)' }}>
+                          ℹ️ <strong>Configure Webhook in Meta Developer Portal:</strong><br />
+                          Webhook URL: <code>{window.location.origin}/api/webhook/whatsapp/{user?.id}</code><br />
+                          Verify Token: Match the verify token configured above.<br />
+                          Webhook Fields: subscribe to <strong>messages</strong>.
+                        </div>
+
+                        <button type="submit" className="btn btn-primary mt-2">Save Meta Config</button>
                       </div>
-                    </div>
-                  )}
-                </div>
+                    ) : (
+                      <div>
+                        {/* Baileys connection UI */}
+                        <div className="channel-card">
+                          <div className="channel-card-body">
+                            <div className="channel-card-details">
+                              <h3>{wsStatus.phone_number ? `+${wsStatus.phone_number}` : 'No Active Channel'}</h3>
+                              <div className="channel-meta-row">
+                                <span>Channel Status:</span>
+                                <strong className={wsStatus.status === 'connected' ? 'text-success' : 'text-danger'}>
+                                  {wsStatus.status === 'connected' ? 'Active' : 'Disconnected'}
+                                </strong>
+                              </div>
+                              <div className="channel-meta-row">
+                                <span>Device Gateway:</span>
+                                <strong>Baileys Web Gateway (Coexistence Mode)</strong>
+                              </div>
+                              {wsStatus.phone_number && (
+                                <div className="channel-meta-row">
+                                  <span>Webhook Delivery:</span>
+                                  <strong className="text-success">Connected & Healthy</strong>
+                                </div>
+                              )}
+                            </div>
+                            <div className="channel-actions-col">
+                              {wsStatus.status === 'disconnected' ? (
+                                <button type="button" className="btn btn-primary" onClick={handleConnectWhatsapp} disabled={isConnecting}>
+                                  {isConnecting ? <Loader className="spin" size={16} /> : 'Connect Channel'}
+                                </button>
+                              ) : (
+                                <>
+                                  <button type="button" className="btn btn-outline" onClick={handleConnectWhatsapp} disabled={isConnecting}>Reconnect</button>
+                                  <button type="button" className="btn btn-danger" onClick={handleDisconnectWhatsapp}>Disconnect</button>
+                                </>
+                              )}
+                            </div>
+                          </div>
 
-                <div className="channel-health-section">
-                  <h3>
-                    <CheckCircle className="text-success" size={20} />
-                    <span>Channel Health Status</span>
-                  </h3>
-                  <div className="health-grid">
-                    <div className="health-card live">
-                      <h4>Account Mode</h4>
-                      <div className="health-status-value">{wsStatus.status === 'connected' ? 'LIVE' : 'OFFLINE'}</div>
-                    </div>
-                    <div className="health-card green">
-                      <h4>Quality Rating</h4>
-                      <div className="health-status-value">{wsStatus.status === 'connected' ? 'GREEN' : 'UNKNOWN'}</div>
-                    </div>
-                    <div className="health-card unconfirmed">
-                      <h4>Messaging Limit</h4>
-                      <div className="health-status-value">{wsStatus.status === 'connected' ? 'Unconfirmed' : 'N/A'}</div>
-                    </div>
-                  </div>
+                          {(wsStatus.status === 'disconnected' || wsStatus.status === 'qr') && wsStatus.qr_code && (
+                            <div className="qr-box" style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                              <p className="instruction">Scan this QR code using WhatsApp Link a Device:</p>
+                              <div className="qr-image-wrapper">
+                                <img src={wsStatus.qr_code} alt="WhatsApp Web QR Code" />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="channel-health-section">
+                          <h3>
+                            <CheckCircle className="text-success" size={20} />
+                            <span>Channel Health Status</span>
+                          </h3>
+                          <div className="health-grid">
+                            <div className="health-card live">
+                              <h4>Account Mode</h4>
+                              <div className="health-status-value">{wsStatus.status === 'connected' ? 'LIVE' : 'OFFLINE'}</div>
+                            </div>
+                            <div className="health-card green">
+                              <h4>Quality Rating</h4>
+                              <div className="health-status-value">{wsStatus.status === 'connected' ? 'GREEN' : 'UNKNOWN'}</div>
+                            </div>
+                            <div className="health-card unconfirmed">
+                              <h4>Messaging Limit</h4>
+                              <div className="health-status-value">{wsStatus.status === 'connected' ? 'Unconfirmed' : 'N/A'}</div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <button type="submit" className="btn btn-primary mt-3">Save Gateway Preference</button>
+                      </div>
+                    )}
+                  </form>
                 </div>
               </div>
             )}
