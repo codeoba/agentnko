@@ -168,6 +168,20 @@ Jibu kwa ufupi, ukitumia emoji zenye staha.',
     console.log("Migration: Added agent_mode column to contacts table.");
   }
 
+  // Migration: Add ai_disabled column to contacts if it doesn't exist
+  const hasAiDisabled = contactColumns.some(c => c.name === 'ai_disabled');
+  if (!hasAiDisabled) {
+    await db.exec("ALTER TABLE contacts ADD COLUMN ai_disabled INTEGER DEFAULT 0");
+    console.log("Migration: Added ai_disabled column to contacts table.");
+  }
+
+  // Migration: Add assignee column to contacts if it doesn't exist
+  const hasAssignee = contactColumns.some(c => c.name === 'assignee');
+  if (!hasAssignee) {
+    await db.exec("ALTER TABLE contacts ADD COLUMN assignee TEXT DEFAULT 'unassigned'");
+    console.log("Migration: Added assignee column to contacts table.");
+  }
+
   return db;
 }
 

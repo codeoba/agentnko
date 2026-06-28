@@ -276,6 +276,33 @@ app.post('/api/crm/contacts', authenticateToken, async (req, res) => {
   }
 });
 
+app.post('/api/crm/contacts/:id/settings', authenticateToken, async (req, res) => {
+  const { ai_disabled, assignee } = req.body;
+  const db = getDb();
+  try {
+    const contact = await db.get('SELECT * FROM contacts WHERE id = ? AND user_id = ?', [req.params.id, req.user.id]);
+    if (!contact) return res.status(404).json({ error: 'Contact not found' });
+
+    await db.run(
+      `UPDATE contacts SET 
+        ai_disabled = ?, 
+        assignee = ?, 
+        updated_at = CURRENT_TIMESTAMP 
+       WHERE id = ? AND user_id = ?`,
+      [
+        ai_disabled === undefined ? contact.ai_disabled : ai_disabled,
+        assignee === undefined ? contact.assignee : assignee,
+        req.params.id,
+        req.user.id
+      ]
+    );
+    const updatedContact = await db.get('SELECT * FROM contacts WHERE id = ? AND user_id = ?', [req.params.id, req.user.id]);
+    res.json(updatedContact);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get('/api/crm/messages/:contactId', authenticateToken, async (req, res) => {
   const db = getDb();
   try {

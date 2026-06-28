@@ -24,7 +24,15 @@ import {
   Play,
   Shield,
   Package,
-  Tag
+  Tag,
+  Image,
+  Paperclip,
+  Smile,
+  Mic,
+  ShoppingBag,
+  FileText,
+  MoreVertical,
+  RefreshCw
 } from 'lucide-react';
 
 export default function App() {
@@ -1081,8 +1089,51 @@ export default function App() {
                 ) : selectedContact ? (
                   <div className="chat-window">
                     <div className="chat-header">
-                      <h3>{selectedContact.name || 'Unknown'}</h3>
-                      <span>+{selectedContact.phone_number}</span>
+                      <div className="chat-header-wrapper">
+                        <div>
+                          <h3>{selectedContact.name || 'Unknown'}</h3>
+                          <span>+{selectedContact.phone_number}</span>
+                        </div>
+                        <div className="chat-header-actions">
+                          {/* Agent Mode Badge */}
+                          <span className={`mode-badge mode-${selectedContact.agent_mode || 'sales'}`}>
+                            {selectedContact.agent_mode === 'support' ? 'Support Mode' : 'Sales Mode'}
+                          </span>
+                          
+                          {/* Assignee Dropdown */}
+                          <select 
+                            value={selectedContact.assignee || 'unassigned'}
+                            onChange={async (e) => {
+                              const newAssignee = e.target.value;
+                              try {
+                                const updated = await apiFetch(`/api/crm/contacts/${selectedContact.id}/settings`, {
+                                  method: 'POST',
+                                  body: JSON.stringify({ assignee: newAssignee })
+                                });
+                                setSelectedContact(updated);
+                                fetchContacts();
+                              } catch (err) {
+                                alert(err.message);
+                              }
+                            }}
+                            className="assignee-select"
+                          >
+                            <option value="unassigned">Unassigned</option>
+                            <option value="me">Assigned to Me</option>
+                            <option value="support">Technical Support</option>
+                          </select>
+
+                          {/* Manual Refresh Button */}
+                          <button 
+                            type="button" 
+                            className="btn-header-action" 
+                            title="Refresh Messages"
+                            onClick={() => fetchChatMessages(selectedContact.id)}
+                          >
+                            <RefreshCw size={16} />
+                          </button>
+                        </div>
+                      </div>
                     </div>
 
                     <div className="chat-messages-box">
@@ -1101,17 +1152,76 @@ export default function App() {
                       )}
                     </div>
 
-                    <form onSubmit={handleSendManualMsg} className="chat-input-bar">
-                      <input 
-                        type="text" 
+                    <div className="chat-input-panel">
+                      <textarea 
                         placeholder={t.typeMessage}
                         value={newMsgText}
                         onChange={e => setNewMsgText(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSendManualMsg(e);
+                          }
+                        }}
+                        rows={2}
+                        className="chat-textarea"
                       />
-                      <button type="submit" className="btn btn-primary">
-                        <Send size={18} />
-                      </button>
-                    </form>
+                      <div className="chat-toolbar">
+                        <div className="toolbar-left">
+                          <button type="button" className="toolbar-btn" title="Upload Image" onClick={() => alert('Feature: Image upload coming soon!')}>
+                            <Image size={18} />
+                          </button>
+                          <button type="button" className="toolbar-btn" title="Attach Document" onClick={() => alert('Feature: Document attachment coming soon!')}>
+                            <Paperclip size={18} />
+                          </button>
+                          <button type="button" className="toolbar-btn" title="Add Emoji" onClick={() => setNewMsgText(prev => prev + ' 😊')}>
+                            <Smile size={18} />
+                          </button>
+                          <button type="button" className="toolbar-btn" title="Send Voice Note" onClick={() => alert('Feature: Push-to-talk recording coming soon!')}>
+                            <Mic size={18} />
+                          </button>
+                          
+                          {/* AI Auto-responder Toggle */}
+                          <button 
+                            type="button" 
+                            className={`toolbar-btn ${selectedContact.ai_disabled === 1 ? 'ai-disabled' : 'ai-enabled'}`}
+                            title={selectedContact.ai_disabled === 1 ? "Washa AI Auto-responder" : "Zima AI Auto-responder"}
+                            onClick={async () => {
+                              const newStatus = selectedContact.ai_disabled === 1 ? 0 : 1;
+                              try {
+                                const updated = await apiFetch(`/api/crm/contacts/${selectedContact.id}/settings`, {
+                                  method: 'POST',
+                                  body: JSON.stringify({ ai_disabled: newStatus })
+                                });
+                                setSelectedContact(updated);
+                                fetchContacts();
+                              } catch (err) {
+                                alert(err.message);
+                              }
+                            }}
+                          >
+                            <Bot size={18} />
+                          </button>
+
+                          {/* Quick Catalog link injection */}
+                          <button 
+                            type="button" 
+                            className="toolbar-btn" 
+                            title="Send Catalog Options" 
+                            onClick={() => {
+                              setNewMsgText(prev => prev + '\nOrodha ya bidhaa zetu: \n1. Sukari (TZS 3,000)\n2. Mchele (TZS 2,500)\nUnakaribishwa kuagiza!');
+                            }}
+                          >
+                            <ShoppingBag size={18} />
+                          </button>
+                        </div>
+                        <div className="toolbar-right">
+                          <button type="button" onClick={handleSendManualMsg} className="btn btn-primary btn-send-icon">
+                            <Send size={18} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 ) : (
                   <div className="empty-state">

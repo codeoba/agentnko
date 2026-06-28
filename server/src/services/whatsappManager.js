@@ -204,9 +204,9 @@ export async function startWhatsappSession(userId) {
         [userId, contact.id, phone, sock.user.id.split(':')[0], text]
       );
 
-      // 3. Trigger AI agent if configuration enabled
+      // 3. Trigger AI agent if configuration enabled and not disabled for this contact
       const aiConfig = await db.get('SELECT * FROM ai_configs WHERE user_id = ?', [userId]);
-      if (aiConfig && aiConfig.enabled === 1) {
+      if (aiConfig && aiConfig.enabled === 1 && contact.ai_disabled !== 1) {
         // Fetch recent message history for context
         const history = await db.all(
           `SELECT text, direction FROM messages 
