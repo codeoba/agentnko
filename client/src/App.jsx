@@ -756,15 +756,17 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="form-group">
-                  <label>{t.apiKeyOverride}</label>
-                  <input 
-                    type="password" 
-                    value={aiConfig.api_key}
-                    placeholder="sk-..."
-                    onChange={e => setAiConfig({ ...aiConfig, api_key: e.target.value })}
-                  />
-                </div>
+                {user && user.role === 'admin' && (
+                  <div className="form-group">
+                    <label>{t.apiKeyOverride}</label>
+                    <input 
+                      type="password" 
+                      value={aiConfig.api_key}
+                      placeholder="sk-..."
+                      onChange={e => setAiConfig({ ...aiConfig, api_key: e.target.value })}
+                    />
+                  </div>
+                )}
 
                 <div className="form-group">
                   <label>{t.systemPrompt}</label>
