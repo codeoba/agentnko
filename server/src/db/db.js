@@ -361,7 +361,8 @@ async function runMigrations() {
     console.log("Migration: Added role to users.");
   }
   if (!userColNames.includes('api_key')) {
-    await db.exec("ALTER TABLE users ADD COLUMN api_key TEXT UNIQUE");
+    await db.exec("ALTER TABLE users ADD COLUMN api_key TEXT");
+    await db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_api_key ON users(api_key)");
     console.log("Migration: Added api_key to users.");
   }
 
