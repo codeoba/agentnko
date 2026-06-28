@@ -380,6 +380,12 @@ body {
   box-shadow: 0 0 8px var(--primary-glow);
 }
 
+.form-group select option,
+select option {
+  background-color: #1e1e24;
+  color: #ffffff;
+}
+
 /* Alert Boxes */
 .alert {
   padding: 12px 16px;
