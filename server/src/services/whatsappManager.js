@@ -206,7 +206,30 @@ export async function startWhatsappSession(userId) {
             continue;
           }
 
-          const responseText = await askAI(promptContext, aiConfig.system_prompt, aiConfig);
+          // Fetch products & coupons
+          const products = await db.all('SELECT name, price, description, status FROM products WHERE user_id = ?', [userId]);
+          const coupons = await db.all('SELECT code, discount_type, value FROM coupons WHERE user_id = ? AND active = 1', [userId]);
+
+          let dynamicContext = '\n\n';
+          if (products.length > 0) {
+            dynamicContext += 'ORODHA YA BIDHAA ZILIZOPO GHALANI NA BEI ZAKE:\n';
+            products.forEach(p => {
+              dynamicContext += `- ${p.name}: Bei TZS ${p.price.toLocaleString()} (${p.description || ''}) - Hali: ${p.status === 'available' ? 'Ipo' : 'Imekwisha'}\n`;
+            });
+          } else {
+            dynamicContext += 'Hakuna bidhaa zilizosajiliwa kwenye catalog kwa sasa.\n';
+          }
+
+          if (coupons.length > 0) {
+            dynamicContext += '\nKUPONI ZA PUNGUZO ZILIZO HAI (COUPONS):\n';
+            coupons.forEach(c => {
+              dynamicContext += `- Code: ${c.code} (${c.discount_type === 'percentage' ? c.value + '%' : c.value.toLocaleString() + ' TZS'} Off)\n`;
+            });
+            dynamicContext += 'Mteja akitaja kuponi mojawapo kati ya hizi, piga hesabu ya punguzo na mpe bei mpya ya kulipa wakati wa kuhitimisha order yake.\n';
+          }
+
+          const combinedSystemPrompt = aiConfig.system_prompt + dynamicContext;
+          const responseText = await askAI(promptContext, combinedSystemPrompt, aiConfig);
           
           if (responseText) {
             // Send reply

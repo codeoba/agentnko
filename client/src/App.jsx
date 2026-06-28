@@ -22,7 +22,9 @@ import {
   AlertTriangle,
   Loader,
   Play,
-  Shield
+  Shield,
+  Package,
+  Tag
 } from 'lucide-react';
 
 export default function App() {
@@ -89,6 +91,16 @@ export default function App() {
   const [adminSearch, setAdminSearch] = useState('');
   const [selectedAdminUser, setSelectedAdminUser] = useState(null);
   const [adminPlanForm, setAdminPlanForm] = useState({ plan: 'pro', days: 30 });
+
+  // Catalog States
+  const [catalog, setCatalog] = useState([]);
+  const [catalogForm, setCatalogForm] = useState({ name: '', price: '', description: '', status: 'available' });
+  const [selectedProduct, setSelectedProduct] = useState(null);
+
+  // Coupons States
+  const [coupons, setCoupons] = useState([]);
+  const [couponForm, setCouponForm] = useState({ code: '', discount_type: 'fixed', value: '', active: 1 });
+  const [selectedCoupon, setSelectedCoupon] = useState(null);
 
   // Fetch current user details on mount/token change
   useEffect(() => {
@@ -435,6 +447,92 @@ export default function App() {
     }
   }, [activeTab, user]);
 
+  // Catalog and Coupon API Fetchers & Handlers
+  const fetchCatalog = async () => {
+    try {
+      const data = await apiFetch('/api/catalog');
+      setCatalog(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const fetchCoupons = async () => {
+    try {
+      const data = await apiFetch('/api/coupons');
+      setCoupons(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleSaveProduct = async (e) => {
+    e.preventDefault();
+    try {
+      await apiFetch('/api/catalog', {
+        method: 'POST',
+        body: JSON.stringify({
+          id: selectedProduct?.id,
+          ...catalogForm,
+          price: parseFloat(catalogForm.price)
+        })
+      });
+      alert('Product saved successfully');
+      setCatalogForm({ name: '', price: '', description: '', status: 'available' });
+      setSelectedProduct(null);
+      fetchCatalog();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleDeleteProduct = async (id) => {
+    if (!confirm('Are you sure you want to delete this product?')) return;
+    try {
+      await apiFetch(`/api/catalog/${id}`, { method: 'DELETE' });
+      fetchCatalog();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleSaveCoupon = async (e) => {
+    e.preventDefault();
+    try {
+      await apiFetch('/api/coupons', {
+        method: 'POST',
+        body: JSON.stringify({
+          id: selectedCoupon?.id,
+          ...couponForm,
+          value: parseFloat(couponForm.value)
+        })
+      });
+      alert('Coupon saved successfully');
+      setCouponForm({ code: '', discount_type: 'fixed', value: '', active: 1 });
+      setSelectedCoupon(null);
+      fetchCoupons();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleDeleteCoupon = async (id) => {
+    if (!confirm('Are you sure you want to delete this coupon?')) return;
+    try {
+      await apiFetch(`/api/coupons/${id}`, { method: 'DELETE' });
+      fetchCoupons();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  // Run catalog/coupon fetchers
+  useEffect(() => {
+    if (!token) return;
+    if (activeTab === 'catalog') fetchCatalog();
+    if (activeTab === 'coupons') fetchCoupons();
+  }, [activeTab, token]);
+
   // Filtered contacts list
   const filteredContacts = contacts.filter(c => 
     c.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -570,6 +668,22 @@ export default function App() {
           >
             <CreditCard size={20} />
             <span>{t.billing}</span>
+          </button>
+
+          <button 
+            className={`nav-item ${activeTab === 'catalog' ? 'active' : ''}`}
+            onClick={() => setActiveTab('catalog')}
+          >
+            <Package size={20} />
+            <span>{t.catalog}</span>
+          </button>
+
+          <button 
+            className={`nav-item ${activeTab === 'coupons' ? 'active' : ''}`}
+            onClick={() => setActiveTab('coupons')}
+          >
+            <Tag size={20} />
+            <span>{t.coupons}</span>
           </button>
 
           {user && user.role === 'admin' && (
@@ -1286,6 +1400,242 @@ export default function App() {
                     </div>
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 8: CATALOG */}
+        {activeTab === 'catalog' && (
+          <div className="tab-pane">
+            <div className="pane-header">
+              <h1>{t.catalog}</h1>
+              <p>Manage product items, prices, and stock status. The AI Agent will read this catalog dynamically.</p>
+            </div>
+
+            <div className="grid grid-2">
+              {/* Product list table */}
+              <div className="content-card">
+                <h2>All Products</h2>
+                <div className="logs-list" style={{ maxHeight: '500px' }}>
+                  {catalog.length === 0 ? (
+                    <p>No products in catalog. Add your first product on the right.</p>
+                  ) : (
+                    catalog.map(p => (
+                      <div key={p.id} className="log-item" style={{ marginBottom: '8px', padding: '12px' }}>
+                        <div className="log-header">
+                          <h4>{p.name}</h4>
+                          <span className={`badge badge-${p.status === 'available' ? 'completed' : 'failed'}`}>
+                            {p.status === 'available' ? t.available : t.outOfStock}
+                          </span>
+                        </div>
+                        <p className="log-text"><strong>Price:</strong> {p.price.toLocaleString()} TZS</p>
+                        <p className="log-text" style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{p.description || 'No description'}</p>
+                        <div className="button-group mt-2" style={{ display: 'flex', gap: '8px' }}>
+                          <button 
+                            className="btn btn-outline" 
+                            style={{ padding: '4px 8px', fontSize: '0.75rem' }}
+                            onClick={() => {
+                              setSelectedProduct(p);
+                              setCatalogForm({ name: p.name, price: p.price, description: p.description, status: p.status });
+                            }}
+                          >
+                            Edit
+                          </button>
+                          <button 
+                            className="btn btn-danger" 
+                            style={{ padding: '4px 8px', fontSize: '0.75rem' }}
+                            onClick={() => handleDeleteProduct(p.id)}
+                          >
+                            {t.delete}
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Product Add/Edit Form */}
+              <div className="content-card">
+                <h2>{selectedProduct ? 'Edit Product' : 'Add New Product'}</h2>
+                <form onSubmit={handleSaveProduct}>
+                  <div className="form-group">
+                    <label>{t.productName}</label>
+                    <input 
+                      type="text" 
+                      required 
+                      value={catalogForm.name}
+                      onChange={e => setCatalogForm({ ...catalogForm, name: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>{t.productPrice}</label>
+                    <input 
+                      type="number" 
+                      required 
+                      value={catalogForm.price}
+                      onChange={e => setCatalogForm({ ...catalogForm, price: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>{t.productDesc}</label>
+                    <textarea 
+                      rows={3} 
+                      value={catalogForm.description || ''}
+                      onChange={e => setCatalogForm({ ...catalogForm, description: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>{t.productStatus}</label>
+                    <select 
+                      value={catalogForm.status}
+                      onChange={e => setCatalogForm({ ...catalogForm, status: e.target.value })}
+                    >
+                      <option value="available">{t.available}</option>
+                      <option value="out_of_stock">{t.outOfStock}</option>
+                    </select>
+                  </div>
+
+                  <div className="button-group">
+                    <button type="submit" className="btn btn-primary">Save Product</button>
+                    {selectedProduct && (
+                      <button 
+                        type="button" 
+                        className="btn btn-outline" 
+                        onClick={() => {
+                          setSelectedProduct(null);
+                          setCatalogForm({ name: '', price: '', description: '', status: 'available' });
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 9: COUPONS */}
+        {activeTab === 'coupons' && (
+          <div className="tab-pane">
+            <div className="pane-header">
+              <h1>{t.coupons}</h1>
+              <p>Create discount promo codes. The AI Agent will read active coupons and apply discounts automatically during checkout.</p>
+            </div>
+
+            <div className="grid grid-2">
+              {/* Coupons List Table */}
+              <div className="content-card">
+                <h2>All Coupons</h2>
+                <div className="logs-list" style={{ maxHeight: '500px' }}>
+                  {coupons.length === 0 ? (
+                    <p>No coupons created yet. Create your first promo code on the right.</p>
+                  ) : (
+                    coupons.map(c => (
+                      <div key={c.id} className="log-item" style={{ marginBottom: '8px', padding: '12px' }}>
+                        <div className="log-header">
+                          <h4>{c.code}</h4>
+                          <span className={`badge badge-${c.active === 1 ? 'completed' : 'failed'}`}>
+                            {c.active === 1 ? t.active : t.inactive}
+                          </span>
+                        </div>
+                        <p className="log-text">
+                          <strong>Discount:</strong> {c.discount_type === 'percentage' ? `${c.value}%` : `${c.value.toLocaleString()} TZS`}
+                        </p>
+                        <div className="button-group mt-2" style={{ display: 'flex', gap: '8px' }}>
+                          <button 
+                            className="btn btn-outline" 
+                            style={{ padding: '4px 8px', fontSize: '0.75rem' }}
+                            onClick={() => {
+                              setSelectedCoupon(c);
+                              setCouponForm({ code: c.code, discount_type: c.discount_type, value: c.value, active: c.active });
+                            }}
+                          >
+                            Edit
+                          </button>
+                          <button 
+                            className="btn btn-danger" 
+                            style={{ padding: '4px 8px', fontSize: '0.75rem' }}
+                            onClick={() => handleDeleteCoupon(c.id)}
+                          >
+                            {t.delete}
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Coupon Add/Edit Form */}
+              <div className="content-card">
+                <h2>{selectedCoupon ? 'Edit Coupon' : 'Create New Coupon'}</h2>
+                <form onSubmit={handleSaveCoupon}>
+                  <div className="form-group">
+                    <label>{t.couponCode}</label>
+                    <input 
+                      type="text" 
+                      required 
+                      placeholder="e.g. OFA20, RAMADHAN"
+                      value={couponForm.code}
+                      onChange={e => setCouponForm({ ...couponForm, code: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>{t.discountType}</label>
+                    <select 
+                      value={couponForm.discount_type}
+                      onChange={e => setCouponForm({ ...couponForm, discount_type: e.target.value })}
+                    >
+                      <option value="fixed">{t.fixed}</option>
+                      <option value="percentage">{t.percentage}</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label>{t.discountValue}</label>
+                    <input 
+                      type="number" 
+                      required 
+                      value={couponForm.value}
+                      onChange={e => setCouponForm({ ...couponForm, value: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>{t.active} Status</label>
+                    <select 
+                      value={couponForm.active}
+                      onChange={e => setCouponForm({ ...couponForm, active: parseInt(e.target.value) })}
+                    >
+                      <option value="1">{t.active}</option>
+                      <option value="0">{t.inactive}</option>
+                    </select>
+                  </div>
+
+                  <div className="button-group">
+                    <button type="submit" className="btn btn-primary">Save Coupon</button>
+                    {selectedCoupon && (
+                      <button 
+                        type="button" 
+                        className="btn btn-outline" 
+                        onClick={() => {
+                          setSelectedCoupon(null);
+                          setCouponForm({ code: '', discount_type: 'fixed', value: '', active: 1 });
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
+                </form>
               </div>
             </div>
           </div>

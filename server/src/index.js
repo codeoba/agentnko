@@ -487,6 +487,104 @@ app.get('/api/admin/payments', authenticateToken, requireAdmin, async (req, res)
   }
 });
 
+// ================= CATALOG ROUTES =================
+
+app.get('/api/catalog', authenticateToken, async (req, res) => {
+  const db = getDb();
+  try {
+    const products = await db.all('SELECT * FROM products WHERE user_id = ? ORDER BY created_at DESC', [req.user.id]);
+    res.json(products);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/catalog', authenticateToken, async (req, res) => {
+  const { id, name, price, description, status } = req.body;
+  if (!name || price === undefined) return res.status(400).json({ error: 'Name and price are required' });
+
+  const db = getDb();
+  try {
+    if (id) {
+      // Update
+      await db.run(
+        `UPDATE products SET name = ?, price = ?, description = ?, status = ? WHERE id = ? AND user_id = ?`,
+        [name, price, description, status || 'available', id, req.user.id]
+      );
+      res.json({ success: true, message: 'Product updated successfully.' });
+    } else {
+      // Create
+      await db.run(
+        `INSERT INTO products (user_id, name, price, description, status) VALUES (?, ?, ?, ?, ?)`,
+        [req.user.id, name, price, description, status || 'available']
+      );
+      res.json({ success: true, message: 'Product added successfully.' });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/catalog/:id', authenticateToken, async (req, res) => {
+  const db = getDb();
+  try {
+    await db.run('DELETE FROM products WHERE id = ? AND user_id = ?', [req.params.id, req.user.id]);
+    res.json({ success: true, message: 'Product deleted successfully.' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ================= COUPON ROUTES =================
+
+app.get('/api/coupons', authenticateToken, async (req, res) => {
+  const db = getDb();
+  try {
+    const coupons = await db.all('SELECT * FROM coupons WHERE user_id = ? ORDER BY created_at DESC', [req.user.id]);
+    res.json(coupons);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/coupons', authenticateToken, async (req, res) => {
+  const { id, code, discount_type, value, active } = req.body;
+  if (!code || value === undefined) return res.status(400).json({ error: 'Code and value are required' });
+
+  const db = getDb();
+  try {
+    const uppercaseCode = code.trim().toUpperCase();
+    if (id) {
+      await db.run(
+        `UPDATE coupons SET code = ?, discount_type = ?, value = ?, active = ? WHERE id = ? AND user_id = ?`,
+        [uppercaseCode, discount_type || 'fixed', value, active === undefined ? 1 : active, id, req.user.id]
+      );
+      res.json({ success: true, message: 'Coupon updated successfully.' });
+    } else {
+      await db.run(
+        `INSERT INTO coupons (user_id, code, discount_type, value, active) VALUES (?, ?, ?, ?, ?)`,
+        [req.user.id, uppercaseCode, discount_type || 'fixed', value, active === undefined ? 1 : active]
+      );
+      res.json({ success: true, message: 'Coupon created successfully.' });
+    }
+  } catch (err) {
+    if (err.message.includes('UNIQUE constraint failed')) {
+      return res.status(400).json({ error: 'Coupon code already exists' });
+    }
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/coupons/:id', authenticateToken, async (req, res) => {
+  const db = getDb();
+  try {
+    await db.run('DELETE FROM coupons WHERE id = ? AND user_id = ?', [req.params.id, req.user.id]);
+    res.json({ success: true, message: 'Coupon deleted successfully.' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Start Server execution
 startServer().catch(err => {
   console.error('Fatal Server Start Error:', err);
