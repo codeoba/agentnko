@@ -288,6 +288,8 @@ app.post('/api/config/woocommerce/sync', authenticateToken, async (req, res) => 
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
 // ================= AUTOMATIONS ROUTES =================
 
 app.get('/api/automations', authenticateToken, async (req, res) => {

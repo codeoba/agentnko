@@ -417,6 +417,7 @@ export async function startWhatsappSession(userId) {
           console.error(`AI execution failed for user ${userId}:`, aiErr);
         }
       }
+    }
   });
 
   return sessionObj;
