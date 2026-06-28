@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   translations 
 } from './utils/i18n.js';
@@ -1024,156 +1024,493 @@ export default function App() {
         {/* TAB: AUTOMATION FLOWS */}
         {activeTab === 'automations' && (
           <div className="page-container">
-            <div className="pane-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+
+            {/* ── Page Header ── */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '28px' }}>
               <div>
-                <h1>Automation Flows</h1>
-                <p>Create and manage conversation flows with rule-based automated responses.</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '6px' }}>
+                  <div style={{
+                    width: '40px', height: '40px', borderRadius: '10px',
+                    background: 'linear-gradient(135deg, #7c3aed, #4f46e5)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    boxShadow: '0 4px 16px rgba(124,58,237,0.4)'
+                  }}>
+                    <Cpu size={20} color="#fff" />
+                  </div>
+                  <h1 style={{
+                    fontFamily: 'var(--font-display)', fontSize: '1.75rem',
+                    fontWeight: 800, letterSpacing: '-0.04em', margin: 0
+                  }}>Automation Flows</h1>
+                </div>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', margin: 0 }}>
+                  Rule-based triggers that run 24/7 without manual intervention.
+                </p>
               </div>
-              <button 
-                type="button" 
-                className="btn btn-primary" 
+
+              <button
+                type="button"
+                className="btn btn-primary"
                 onClick={() => {
                   setSelectedAutomation(null);
                   setAutomationForm({
-                    name: '',
-                    description: '',
+                    name: '', description: '',
                     trigger_type: 'message_received',
-                    condition_type: 'contains',
-                    condition_value: '',
-                    action_type: 'send_message',
-                    action_value: '',
-                    active: 1
+                    condition_type: 'contains', condition_value: '',
+                    action_type: 'send_message', action_value: '', active: 1
                   });
                   setShowAddAutomation(true);
                 }}
+                style={{ gap: '8px', padding: '10px 20px' }}
               >
                 <Plus size={16} />
                 Create New Flow
               </button>
             </div>
 
-            {/* Automation Statistics Cards */}
-            <div className="grid grid-3 mb-4">
-              <div className="stats-card">
-                <Cpu size={24} className="card-icon text-primary" />
-                <h3>{automations.length}</h3>
-                <p>Total Flows</p>
+            {/* ── Stat Cards ── */}
+            <div className="grid grid-3" style={{ marginBottom: '24px' }}>
+              {/* Total Flows */}
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(124,58,237,0.12) 0%, rgba(79,70,229,0.06) 100%)',
+                border: '1px solid rgba(124,58,237,0.2)',
+                borderRadius: '16px', padding: '20px 24px',
+                position: 'relative', overflow: 'hidden', transition: 'var(--transition)',
+                cursor: 'default'
+              }}
+              onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-3px)'}
+              onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+              >
+                <div style={{ position: 'absolute', top: 0, right: 0, width: '80px', height: '80px',
+                  background: 'radial-gradient(circle, rgba(124,58,237,0.2) 0%, transparent 70%)', borderRadius: '50%' }} />
+                <div style={{
+                  width: '36px', height: '36px', borderRadius: '10px', marginBottom: '14px',
+                  background: 'linear-gradient(135deg, #7c3aed, #4f46e5)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: '0 4px 12px rgba(124,58,237,0.4)'
+                }}>
+                  <Cpu size={18} color="#fff" />
+                </div>
+                <div style={{ fontSize: '2.25rem', fontWeight: 800, fontFamily: 'var(--font-display)', letterSpacing: '-0.04em', marginBottom: '4px', lineHeight: 1 }}>
+                  {automations.length}
+                </div>
+                <div style={{ color: 'var(--text-secondary)', fontSize: '0.825rem', fontWeight: 500 }}>Total Flows</div>
               </div>
 
-              <div className="stats-card">
-                <PlayCircle size={24} className="card-icon text-success" />
-                <h3>{automations.filter(a => a.active === 1).length}</h3>
-                <p>Active Flows</p>
+              {/* Active Flows */}
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(34,211,165,0.1) 0%, rgba(5,150,105,0.05) 100%)',
+                border: '1px solid rgba(34,211,165,0.18)',
+                borderRadius: '16px', padding: '20px 24px',
+                position: 'relative', overflow: 'hidden', transition: 'var(--transition)',
+                cursor: 'default'
+              }}
+              onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-3px)'}
+              onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+              >
+                <div style={{ position: 'absolute', top: 0, right: 0, width: '80px', height: '80px',
+                  background: 'radial-gradient(circle, rgba(34,211,165,0.15) 0%, transparent 70%)', borderRadius: '50%' }} />
+                <div style={{
+                  width: '36px', height: '36px', borderRadius: '10px', marginBottom: '14px',
+                  background: 'linear-gradient(135deg, #059669, #047857)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: '0 4px 12px rgba(5,150,105,0.4)'
+                }}>
+                  <PlayCircle size={18} color="#fff" />
+                </div>
+                <div style={{ fontSize: '2.25rem', fontWeight: 800, fontFamily: 'var(--font-display)', letterSpacing: '-0.04em', marginBottom: '4px', lineHeight: 1, color: '#34d399' }}>
+                  {automations.filter(a => a.active === 1).length}
+                </div>
+                <div style={{ color: 'var(--text-secondary)', fontSize: '0.825rem', fontWeight: 500 }}>Active Flows</div>
               </div>
 
-              <div className="stats-card">
-                <CheckCircle size={24} className="card-icon text-warning" />
-                <h3>{automations.reduce((acc, curr) => acc + (curr.runs_count || 0), 0)}</h3>
-                <p>Total Executions</p>
+              {/* Total Executions */}
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(251,191,36,0.1) 0%, rgba(217,119,6,0.05) 100%)',
+                border: '1px solid rgba(251,191,36,0.18)',
+                borderRadius: '16px', padding: '20px 24px',
+                position: 'relative', overflow: 'hidden', transition: 'var(--transition)',
+                cursor: 'default'
+              }}
+              onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-3px)'}
+              onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+              >
+                <div style={{ position: 'absolute', top: 0, right: 0, width: '80px', height: '80px',
+                  background: 'radial-gradient(circle, rgba(251,191,36,0.15) 0%, transparent 70%)', borderRadius: '50%' }} />
+                <div style={{
+                  width: '36px', height: '36px', borderRadius: '10px', marginBottom: '14px',
+                  background: 'linear-gradient(135deg, #d97706, #b45309)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: '0 4px 12px rgba(217,119,6,0.4)'
+                }}>
+                  <CheckCircle size={18} color="#fff" />
+                </div>
+                <div style={{ fontSize: '2.25rem', fontWeight: 800, fontFamily: 'var(--font-display)', letterSpacing: '-0.04em', marginBottom: '4px', lineHeight: 1, color: '#fbbf24' }}>
+                  {automations.reduce((acc, curr) => acc + (curr.runs_count || 0), 0)}
+                </div>
+                <div style={{ color: 'var(--text-secondary)', fontSize: '0.825rem', fontWeight: 500 }}>Total Executions</div>
               </div>
             </div>
 
-            {/* Automations Grid */}
+            {/* ── Automations Grid / Empty State ── */}
             {automations.length === 0 ? (
-              <div className="content-card center-card" style={{ padding: '40px', textAlign: 'center' }}>
-                <Cpu size={48} style={{ color: 'var(--text-muted)', marginBottom: '15px' }} />
-                <h3>No Automation Flows Found</h3>
-                <p style={{ color: 'var(--text-muted)', marginBottom: '20px' }}>Create custom rules to trigger replies, tagging, or AI routing on customer interactions.</p>
-                <button 
-                  className="btn btn-primary"
-                  onClick={() => setShowAddAutomation(true)}
-                >
-                  Create Your First Flow
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-3">
-                {automations.map(a => (
-                  <div key={a.id} className="glass-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '230px' }}>
-                    <div>
-                      <div className="log-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: a.active === 1 ? '#10b981' : '#ef4444', boxShadow: a.active === 1 ? '0 0 10px #10b981' : 'none' }}></span>
-                          <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: '600' }}>{a.name}</h4>
+
+              /* ── ELITE EMPTY STATE ── */
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                {/* Main empty hero */}
+                <div style={{
+                  background: 'linear-gradient(135deg, rgba(14,14,24,0.9) 0%, rgba(20,14,40,0.8) 100%)',
+                  border: '1px solid rgba(124,58,237,0.15)',
+                  borderRadius: '20px', padding: '56px 32px', textAlign: 'center',
+                  position: 'relative', overflow: 'hidden'
+                }}>
+                  {/* Decorative orbs */}
+                  <div style={{ position: 'absolute', top: '-40px', left: '50%', transform: 'translateX(-50%)',
+                    width: '280px', height: '160px',
+                    background: 'radial-gradient(ellipse, rgba(124,58,237,0.12) 0%, transparent 70%)',
+                    pointerEvents: 'none' }} />
+
+                  {/* Animated icon cluster */}
+                  <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px' }}>
+                    <div style={{
+                      width: '80px', height: '80px', borderRadius: '20px',
+                      background: 'linear-gradient(135deg, rgba(124,58,237,0.2), rgba(79,70,229,0.1))',
+                      border: '1px solid rgba(124,58,237,0.25)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      boxShadow: '0 0 40px rgba(124,58,237,0.15)',
+                      animation: 'float 3s ease-in-out infinite'
+                    }}>
+                      <Cpu size={36} style={{ color: '#a78bfa' }} />
+                    </div>
+                    {/* Ripple rings */}
+                    <div style={{
+                      position: 'absolute', inset: '-16px', borderRadius: '36px',
+                      border: '1px solid rgba(124,58,237,0.12)',
+                      animation: 'glow-pulse 2.5s ease-in-out infinite'
+                    }} />
+                    <div style={{
+                      position: 'absolute', inset: '-32px', borderRadius: '48px',
+                      border: '1px solid rgba(124,58,237,0.06)'
+                    }} />
+                  </div>
+
+                  <h2 style={{
+                    fontFamily: 'var(--font-display)', fontSize: '1.4rem', fontWeight: 800,
+                    letterSpacing: '-0.03em', marginBottom: '10px', color: 'var(--text-primary)'
+                  }}>No Automation Flows Yet</h2>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', maxWidth: '400px', margin: '0 auto 28px', lineHeight: 1.6 }}>
+                    Build intelligent conversation rules that reply, tag, and route customers automatically — 24/7, without you lifting a finger.
+                  </p>
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => setShowAddAutomation(true)}
+                    style={{ padding: '11px 28px', fontSize: '0.9rem', gap: '8px' }}
+                  >
+                    <Plus size={16} />
+                    Create Your First Flow
+                  </button>
+                </div>
+
+                {/* Use-case suggestion cards */}
+                <div style={{ marginTop: '4px' }}>
+                  <div style={{
+                    fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)',
+                    textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'var(--font-mono)',
+                    marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '10px'
+                  }}>
+                    Popular Use Cases
+                    <div style={{ flex: 1, height: '1px', background: 'var(--border-subtle)' }} />
+                  </div>
+                  <div className="grid grid-3">
+                    {[
+                      { icon: '👋', title: 'Welcome Message', desc: 'Auto-greet every new contact with a branded introduction.', trigger: 'new_conversation', badge: 'Trigger: New Chat', color: '#818cf8' },
+                      { icon: '🏷️', title: 'Lead Tagger', desc: 'Tag contacts who mention "price" or "buy" as hot leads.', trigger: 'keyword_match', badge: 'Trigger: Keyword', color: '#34d399' },
+                      { icon: '🤖', title: 'AI Handoff', desc: 'Disable AI and alert agent when a human escalation keyword is detected.', trigger: 'message_received', badge: 'Trigger: Message', color: '#fbbf24' },
+                    ].map((uc) => (
+                      <div
+                        key={uc.title}
+                        onClick={() => {
+                          setAutomationForm({ name: uc.title, description: uc.desc, trigger_type: 'message_received', condition_type: 'contains', condition_value: '', action_type: 'send_message', action_value: '', active: 1 });
+                          setSelectedAutomation(null);
+                          setShowAddAutomation(true);
+                        }}
+                        style={{
+                          background: 'rgba(255,255,255,0.018)',
+                          border: '1px solid var(--border-subtle)',
+                          borderRadius: '14px', padding: '20px',
+                          cursor: 'pointer', transition: 'var(--transition)',
+                          display: 'flex', flexDirection: 'column', gap: '10px'
+                        }}
+                        onMouseEnter={e => {
+                          e.currentTarget.style.borderColor = `${uc.color}40`;
+                          e.currentTarget.style.background = `rgba(255,255,255,0.035)`;
+                          e.currentTarget.style.transform = 'translateY(-2px)';
+                        }}
+                        onMouseLeave={e => {
+                          e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                          e.currentTarget.style.background = 'rgba(255,255,255,0.018)';
+                          e.currentTarget.style.transform = 'translateY(0)';
+                        }}
+                      >
+                        <div style={{ fontSize: '1.6rem' }}>{uc.icon}</div>
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '4px', fontFamily: 'var(--font-display)' }}>{uc.title}</div>
+                          <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', lineHeight: 1.5 }}>{uc.desc}</div>
                         </div>
-                        <label className="toggle-switch">
-                          <input 
+                        <div style={{
+                          fontSize: '0.68rem', fontWeight: 700, padding: '3px 8px',
+                          background: `${uc.color}18`, color: uc.color,
+                          border: `1px solid ${uc.color}30`,
+                          borderRadius: '20px', alignSelf: 'flex-start',
+                          fontFamily: 'var(--font-mono)', letterSpacing: '0.04em', textTransform: 'uppercase'
+                        }}>{uc.badge}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+            ) : (
+              /* ── AUTOMATION FLOW CARDS ── */
+              <div className="grid grid-3">
+                {automations.map(a => {
+                  const isActive = a.active === 1;
+                  const triggerLabels = {
+                    message_received: 'Incoming Message',
+                    new_conversation: 'New Conversation',
+                  };
+                  const actionLabels = {
+                    send_message: 'Send Reply',
+                    add_tag: 'Add Tag',
+                    remove_tag: 'Remove Tag',
+                    disable_ai: 'Mute AI',
+                    enable_ai: 'Enable AI',
+                  };
+
+                  return (
+                    <div key={a.id} style={{
+                      background: isActive
+                        ? 'linear-gradient(145deg, rgba(14,14,24,0.95) 0%, rgba(20,14,40,0.9) 100%)'
+                        : 'rgba(14,14,24,0.7)',
+                      border: `1px solid ${isActive ? 'rgba(124,58,237,0.2)' : 'rgba(255,255,255,0.05)'}`,
+                      borderRadius: '16px',
+                      padding: '20px',
+                      display: 'flex', flexDirection: 'column', gap: '16px',
+                      transition: 'var(--transition)',
+                      position: 'relative', overflow: 'hidden',
+                      minHeight: '240px'
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = isActive ? '0 12px 40px rgba(124,58,237,0.12)' : '0 8px 24px rgba(0,0,0,0.3)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
+                    >
+                      {/* Top accent line when active */}
+                      {isActive && (
+                        <div style={{
+                          position: 'absolute', top: 0, left: '10%', right: '10%', height: '1px',
+                          background: 'linear-gradient(90deg, transparent, rgba(167,139,250,0.6), transparent)'
+                        }} />
+                      )}
+
+                      {/* Card Header */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
+                          {/* Status dot */}
+                          <div style={{
+                            width: '8px', height: '8px', borderRadius: '50%', flexShrink: 0,
+                            background: isActive ? '#22d3a5' : '#5a5a72',
+                            boxShadow: isActive ? '0 0 8px rgba(34,211,165,0.7)' : 'none',
+                            animation: isActive ? 'live-pulse 2s infinite' : 'none'
+                          }} />
+                          <div style={{
+                            fontSize: '0.95rem', fontWeight: 700,
+                            fontFamily: 'var(--font-display)',
+                            color: 'var(--text-primary)',
+                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+                          }}>{a.name}</div>
+                        </div>
+                        {/* Toggle */}
+                        <label className="toggle-switch" style={{ flexShrink: 0 }}>
+                          <input
                             type="checkbox"
-                            checked={a.active === 1}
+                            checked={isActive}
                             onChange={() => handleToggleAutomation(a.id, a.active)}
                           />
-                          <span className="slider"></span>
+                          <span className="toggle-slider"></span>
                         </label>
                       </div>
 
-                      <p className="log-text" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
-                        {a.description || 'No description provided.'}
-                      </p>
+                      {/* Description */}
+                      {a.description && (
+                        <p style={{
+                          fontSize: '0.82rem', color: 'var(--text-muted)',
+                          lineHeight: 1.5, margin: 0,
+                          display: '-webkit-box', WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical', overflow: 'hidden'
+                        }}>{a.description}</p>
+                      )}
 
-                      <div className="badges-row" style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '12px' }}>
-                        <span className="badge badge-trigger" style={{ fontSize: '0.75rem' }}>{a.trigger_type}</span>
-                        {a.condition_type !== 'always' && (
-                          <span className="badge badge-condition" style={{ fontSize: '0.75rem' }}>
-                            {a.condition_type}: "{a.condition_value}"
+                      {/* ── Pipeline Visual: Trigger → Condition → Action ── */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                        {/* Trigger */}
+                        <div style={{
+                          display: 'flex', alignItems: 'center', gap: '6px',
+                          background: 'rgba(251,191,36,0.08)',
+                          border: '1px solid rgba(251,191,36,0.2)',
+                          borderRadius: '8px', padding: '5px 10px'
+                        }}>
+                          <Play size={10} color="#fbbf24" />
+                          <span style={{ fontSize: '0.72rem', color: '#fbbf24', fontWeight: 600, fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                            {triggerLabels[a.trigger_type] || a.trigger_type}
                           </span>
-                        )}
-                        <span className="badge badge-action" style={{ fontSize: '0.75rem' }}>
-                          {a.action_type === 'send_message' ? 'reply' : a.action_type}
-                        </span>
-                      </div>
-                    </div>
+                        </div>
 
-                    <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                        <strong>{a.runs_count || 0}</strong> runs
-                      </span>
-                      <div className="button-group" style={{ display: 'flex', gap: '8px' }}>
-                        <button 
-                          className="btn btn-outline" 
-                          style={{ padding: '4px 8px', fontSize: '0.75rem' }}
-                          onClick={() => {
-                            setSelectedAutomation(a);
-                            setAutomationForm({
-                              name: a.name,
-                              description: a.description || '',
-                              trigger_type: a.trigger_type,
-                              condition_type: a.condition_type,
-                              condition_value: a.condition_value || '',
-                              action_type: a.action_type,
-                              action_value: a.action_value || '',
-                              active: a.active
-                            });
-                            setShowAddAutomation(true);
-                          }}
-                        >
-                          Edit
-                        </button>
-                        <button 
-                          className="btn btn-danger" 
-                          style={{ padding: '4px 8px', fontSize: '0.75rem' }}
-                          onClick={() => handleDeleteAutomation(a.id)}
-                        >
-                          Delete
-                        </button>
+                        {/* Arrow */}
+                        <div style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>→</div>
+
+                        {/* Condition */}
+                        {a.condition_type !== 'always' && (
+                          <>
+                            <div style={{
+                              display: 'flex', alignItems: 'center', gap: '6px',
+                              background: 'rgba(96,165,250,0.08)',
+                              border: '1px solid rgba(96,165,250,0.2)',
+                              borderRadius: '8px', padding: '5px 10px',
+                              maxWidth: '120px'
+                            }}>
+                              <span style={{ fontSize: '0.72rem', color: '#60a5fa', fontWeight: 600, fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '0.04em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {a.condition_type}: "{a.condition_value}"
+                              </span>
+                            </div>
+                            <div style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>→</div>
+                          </>
+                        )}
+
+                        {/* Action */}
+                        <div style={{
+                          display: 'flex', alignItems: 'center', gap: '6px',
+                          background: 'rgba(34,211,165,0.08)',
+                          border: '1px solid rgba(34,211,165,0.2)',
+                          borderRadius: '8px', padding: '5px 10px'
+                        }}>
+                          <CheckCircle size={10} color="#22d3a5" />
+                          <span style={{ fontSize: '0.72rem', color: '#22d3a5', fontWeight: 600, fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                            {actionLabels[a.action_type] || a.action_type}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Footer: runs + actions */}
+                      <div style={{
+                        marginTop: 'auto',
+                        borderTop: '1px solid var(--border-subtle)',
+                        paddingTop: '14px',
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <div style={{
+                            width: '24px', height: '24px', borderRadius: '6px',
+                            background: 'rgba(255,255,255,0.05)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center'
+                          }}>
+                            <Play size={10} color="var(--text-muted)" />
+                          </div>
+                          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                            <strong style={{ color: isActive ? '#22d3a5' : 'var(--text-secondary)' }}>{a.runs_count || 0}</strong> runs
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <button
+                            className="btn btn-outline btn-sm"
+                            style={{ padding: '5px 12px', fontSize: '0.75rem' }}
+                            onClick={() => {
+                              setSelectedAutomation(a);
+                              setAutomationForm({
+                                name: a.name, description: a.description || '',
+                                trigger_type: a.trigger_type, condition_type: a.condition_type,
+                                condition_value: a.condition_value || '', action_type: a.action_type,
+                                action_value: a.action_value || '', active: a.active
+                              });
+                              setShowAddAutomation(true);
+                            }}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            className="btn btn-danger btn-sm"
+                            style={{ padding: '5px 12px', fontSize: '0.75rem' }}
+                            onClick={() => handleDeleteAutomation(a.id)}
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 
-            {/* Create/Edit Flow Modal */}
+            {/* ── Create/Edit Flow Modal ── */}
             {showAddAutomation && (
               <div className="modal-overlay-blur">
-                <div className="modal-content-premium">
-                  <h2>{selectedAutomation ? 'Edit Automation Flow' : 'Create New Automation Flow'}</h2>
+                <div className="modal-content-premium" style={{ width: '580px' }}>
+
+                  {/* Modal header */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{
+                        width: '36px', height: '36px', borderRadius: '10px',
+                        background: 'linear-gradient(135deg, #7c3aed, #4f46e5)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        boxShadow: '0 4px 12px rgba(124,58,237,0.4)'
+                      }}>
+                        <Cpu size={18} color="#fff" />
+                      </div>
+                      <div>
+                        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>
+                          {selectedAutomation ? 'Edit Flow' : 'Create Automation Flow'}
+                        </h2>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.78rem', margin: 0 }}>Configure trigger, condition, and action</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn-icon"
+                      onClick={() => { setShowAddAutomation(false); setSelectedAutomation(null); }}
+                      style={{ fontSize: '1.1rem', color: 'var(--text-muted)', padding: '6px' }}
+                    >✕</button>
+                  </div>
+
+                  {/* Flow Pipeline Preview */}
+                  <div style={{
+                    background: 'rgba(255,255,255,0.025)',
+                    border: '1px solid var(--border-subtle)',
+                    borderRadius: '12px', padding: '14px 18px',
+                    display: 'flex', alignItems: 'center', gap: '8px',
+                    marginBottom: '24px', flexWrap: 'wrap'
+                  }}>
+                    <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Preview:</span>
+                    <span style={{ fontSize: '0.72rem', background: 'rgba(251,191,36,0.12)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.2)', borderRadius: '6px', padding: '3px 8px', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
+                      {automationForm.trigger_type}
+                    </span>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>→</span>
+                    {automationForm.condition_type !== 'always' && (
+                      <>
+                        <span style={{ fontSize: '0.72rem', background: 'rgba(96,165,250,0.12)', color: '#60a5fa', border: '1px solid rgba(96,165,250,0.2)', borderRadius: '6px', padding: '3px 8px', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
+                          {automationForm.condition_type} "{automationForm.condition_value || '...'}"
+                        </span>
+                        <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>→</span>
+                      </>
+                    )}
+                    <span style={{ fontSize: '0.72rem', background: 'rgba(34,211,165,0.12)', color: '#22d3a5', border: '1px solid rgba(34,211,165,0.2)', borderRadius: '6px', padding: '3px 8px', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
+                      {automationForm.action_type}
+                    </span>
+                  </div>
+
                   <form onSubmit={handleSaveAutomation}>
-                    
                     <div className="form-group">
                       <label>Flow Name *</label>
-                      <input 
-                        type="text" 
-                        required 
+                      <input
+                        type="text" required
                         placeholder="e.g. Welcome Message, Lead Tagging"
                         value={automationForm.name}
                         onChange={e => setAutomationForm({ ...automationForm, name: e.target.value })}
@@ -1182,18 +1519,25 @@ export default function App() {
 
                     <div className="form-group">
                       <label>Description</label>
-                      <input 
-                        type="text" 
-                        placeholder="e.g. Runs when users ask for details"
+                      <input
+                        type="text"
+                        placeholder="Brief description of what this flow does"
                         value={automationForm.description}
                         onChange={e => setAutomationForm({ ...automationForm, description: e.target.value })}
                       />
                     </div>
 
-                    <div className="grid grid-2">
-                      <div className="form-group">
-                        <label>Trigger Event *</label>
-                        <select 
+                    {/* Step 1: Trigger */}
+                    <div style={{
+                      background: 'rgba(251,191,36,0.04)', border: '1px solid rgba(251,191,36,0.12)',
+                      borderRadius: '12px', padding: '16px', marginBottom: '12px'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                        <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'rgba(251,191,36,0.2)', border: '1px solid rgba(251,191,36,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem', color: '#fbbf24', fontWeight: 800 }}>1</div>
+                        <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'var(--font-mono)' }}>Trigger Event</span>
+                      </div>
+                      <div className="form-group" style={{ marginBottom: 0 }}>
+                        <select
                           value={automationForm.trigger_type}
                           onChange={e => setAutomationForm({ ...automationForm, trigger_type: e.target.value })}
                         >
@@ -1201,86 +1545,100 @@ export default function App() {
                           <option value="new_conversation">New Conversation</option>
                         </select>
                       </div>
-
-                      <div className="form-group">
-                        <label>Condition Match *</label>
-                        <select 
-                          value={automationForm.condition_type}
-                          onChange={e => setAutomationForm({ ...automationForm, condition_type: e.target.value })}
-                        >
-                          <option value="contains">Contains Keyword</option>
-                          <option value="equals">Equals Exactly</option>
-                          <option value="starts_with">Starts With</option>
-                          <option value="always">Always Run</option>
-                        </select>
-                      </div>
                     </div>
 
-                    {automationForm.condition_type !== 'always' && (
-                      <div className="form-group">
-                        <label>Trigger Keyword / Phrase *</label>
-                        <input 
-                          type="text" 
-                          required 
-                          placeholder="e.g. price, habari, help"
-                          value={automationForm.condition_value}
-                          onChange={e => setAutomationForm({ ...automationForm, condition_value: e.target.value })}
-                        />
+                    {/* Step 2: Condition */}
+                    <div style={{
+                      background: 'rgba(96,165,250,0.04)', border: '1px solid rgba(96,165,250,0.12)',
+                      borderRadius: '12px', padding: '16px', marginBottom: '12px'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                        <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'rgba(96,165,250,0.2)', border: '1px solid rgba(96,165,250,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem', color: '#60a5fa', fontWeight: 800 }}>2</div>
+                        <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#60a5fa', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'var(--font-mono)' }}>Condition Match</span>
                       </div>
-                    )}
-
-                    <div className="form-group">
-                      <label>Action Event *</label>
-                      <select 
-                        value={automationForm.action_type}
-                        onChange={e => setAutomationForm({ ...automationForm, action_type: e.target.value })}
-                      >
-                        <option value="send_message">Send Reply Message</option>
-                        <option value="add_tag">Add Tag to Contact</option>
-                        <option value="remove_tag">Remove Tag from Contact</option>
-                        <option value="disable_ai">Mute / Disable AI Responder</option>
-                        <option value="enable_ai">Unmute / Enable AI Responder</option>
-                      </select>
-                    </div>
-
-                    {(automationForm.action_type === 'send_message' || automationForm.action_type === 'add_tag' || automationForm.action_type === 'remove_tag') && (
-                      <div className="form-group">
-                        <label>
-                          {automationForm.action_type === 'send_message' ? 'Reply Payload *' : 'Tag Value *'}
-                        </label>
-                        {automationForm.action_type === 'send_message' ? (
-                          <textarea 
-                            rows={4} 
-                            required 
-                            placeholder="Type reply message text here..."
-                            value={automationForm.action_value}
-                            onChange={e => setAutomationForm({ ...automationForm, action_value: e.target.value })}
-                          />
-                        ) : (
-                          <input 
-                            type="text" 
-                            required 
-                            placeholder="e.g. hot-lead, support"
-                            value={automationForm.action_value}
-                            onChange={e => setAutomationForm({ ...automationForm, action_value: e.target.value })}
-                          />
+                      <div className="grid grid-2" style={{ marginBottom: automationForm.condition_type !== 'always' ? '12px' : 0 }}>
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <select
+                            value={automationForm.condition_type}
+                            onChange={e => setAutomationForm({ ...automationForm, condition_type: e.target.value })}
+                          >
+                            <option value="contains">Contains Keyword</option>
+                            <option value="equals">Equals Exactly</option>
+                            <option value="starts_with">Starts With</option>
+                            <option value="always">Always Run</option>
+                          </select>
+                        </div>
+                        {automationForm.condition_type !== 'always' && (
+                          <div className="form-group" style={{ marginBottom: 0 }}>
+                            <input
+                              type="text" required
+                              placeholder="e.g. price, habari, help"
+                              value={automationForm.condition_value}
+                              onChange={e => setAutomationForm({ ...automationForm, condition_value: e.target.value })}
+                            />
+                          </div>
                         )}
                       </div>
-                    )}
+                    </div>
 
-                    <div className="button-group mt-3" style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-                      <button 
-                        type="button" 
-                        className="btn btn-outline" 
-                        onClick={() => {
-                          setShowAddAutomation(false);
-                          setSelectedAutomation(null);
-                        }}
+                    {/* Step 3: Action */}
+                    <div style={{
+                      background: 'rgba(34,211,165,0.04)', border: '1px solid rgba(34,211,165,0.12)',
+                      borderRadius: '12px', padding: '16px', marginBottom: '20px'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                        <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'rgba(34,211,165,0.2)', border: '1px solid rgba(34,211,165,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem', color: '#22d3a5', fontWeight: 800 }}>3</div>
+                        <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#22d3a5', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'var(--font-mono)' }}>Execute Action</span>
+                      </div>
+                      <div className="form-group" style={{ marginBottom: automationForm.action_type === 'send_message' || automationForm.action_type === 'add_tag' || automationForm.action_type === 'remove_tag' ? '12px' : 0 }}>
+                        <select
+                          value={automationForm.action_type}
+                          onChange={e => setAutomationForm({ ...automationForm, action_type: e.target.value })}
+                        >
+                          <option value="send_message">Send Reply Message</option>
+                          <option value="add_tag">Add Tag to Contact</option>
+                          <option value="remove_tag">Remove Tag from Contact</option>
+                          <option value="disable_ai">Mute / Disable AI Responder</option>
+                          <option value="enable_ai">Unmute / Enable AI Responder</option>
+                        </select>
+                      </div>
+                      {(automationForm.action_type === 'send_message' || automationForm.action_type === 'add_tag' || automationForm.action_type === 'remove_tag') && (
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <label style={{ color: 'rgba(34,211,165,0.8)', fontSize: '0.72rem' }}>
+                            {automationForm.action_type === 'send_message' ? 'Reply Message *' : 'Tag Value *'}
+                          </label>
+                          {automationForm.action_type === 'send_message' ? (
+                            <textarea
+                              rows={3} required
+                              placeholder="Type the automatic reply here..."
+                              value={automationForm.action_value}
+                              onChange={e => setAutomationForm({ ...automationForm, action_value: e.target.value })}
+                              style={{ resize: 'none' }}
+                            />
+                          ) : (
+                            <input
+                              type="text" required
+                              placeholder="e.g. hot-lead, support, vip"
+                              value={automationForm.action_value}
+                              onChange={e => setAutomationForm({ ...automationForm, action_value: e.target.value })}
+                            />
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Modal buttons */}
+                    <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                      <button
+                        type="button"
+                        className="btn btn-outline"
+                        onClick={() => { setShowAddAutomation(false); setSelectedAutomation(null); }}
                       >
                         Cancel
                       </button>
-                      <button type="submit" className="btn btn-primary">
-                        Save Flow
+                      <button type="submit" className="btn btn-primary" style={{ gap: '8px' }}>
+                        <CheckCircle size={15} />
+                        {selectedAutomation ? 'Save Changes' : 'Create Flow'}
                       </button>
                     </div>
                   </form>
