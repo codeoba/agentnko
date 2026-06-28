@@ -140,6 +140,19 @@ Jibu kwa ufupi, ukitumia emoji zenye staha.',
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
       FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE CASCADE
     );
+
+    CREATE TABLE IF NOT EXISTS woocommerce_configs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL UNIQUE,
+      domain_name TEXT NOT NULL,
+      consumer_key TEXT NOT NULL,
+      consumer_secret TEXT NOT NULL,
+      active INTEGER DEFAULT 0,
+      sync_products INTEGER DEFAULT 0,
+      create_orders INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
   `);
 
   console.log('SQLite Database initialized successfully.');

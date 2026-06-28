@@ -13,6 +13,7 @@ import pino from 'pino';
 import { getDb } from '../db/db.js';
 import { askAI } from './aiService.js';
 import { generateReceiptPdf } from './receiptService.js';
+import { createWooCommerceOrder } from './wooService.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const sessionsDir = path.resolve(__dirname, '../../sessions');
@@ -298,9 +299,25 @@ export async function startWhatsappSession(userId) {
                 // Clean the output message
                 cleanedResponse = (cleanedResponse.slice(0, startIdx) + cleanedResponse.slice(endIdx + 1)).trim();
                 
+                // Try to sync with WooCommerce
+                let finalOrderId = Math.floor(Math.random() * 900000) + 100000;
+                try {
+                  const wooOrderId = await createWooCommerceOrder(userId, {
+                    customerName: receiptData.customerName || contact.name,
+                    customerPhone: phone,
+                    deliveryAddress: receiptData.deliveryAddress || 'Pick-up',
+                    items: receiptData.items || []
+                  });
+                  if (wooOrderId) {
+                    finalOrderId = wooOrderId;
+                  }
+                } catch (wErr) {
+                  console.error("WooCommerce order sync error:", wErr);
+                }
+
                 // Generate PDF
                 receiptPath = await generateReceiptPdf({
-                  orderId: Math.floor(Math.random() * 900000) + 100000,
+                  orderId: finalOrderId,
                   brandName: aiConfig.provider === 'gemini' ? 'AgentNKO Store' : 'AgentNKO Commerce',
                   customerName: receiptData.customerName || contact.name,
                   customerPhone: phone,

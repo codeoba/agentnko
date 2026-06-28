@@ -14,6 +14,7 @@ import {
 } from './services/whatsappManager.js';
 import { askAI } from './services/aiService.js';
 import { initiatePayment, getPaymentStatus } from './services/paymentService.js';
+import { syncWooCommerceProducts } from './services/wooService.js';
 
 dotenv.config();
 
@@ -235,6 +236,55 @@ app.post('/api/config/ai', authenticateToken, async (req, res) => {
       ]
     );
     res.json({ message: 'AI configuration updated successfully.' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ================= WOOCOMMERCE ROUTES =================
+
+app.get('/api/config/woocommerce', authenticateToken, async (req, res) => {
+  const db = getDb();
+  try {
+    let config = await db.get('SELECT * FROM woocommerce_configs WHERE user_id = ?', [req.user.id]);
+    if (!config) {
+      config = { domain_name: '', consumer_key: '', consumer_secret: '', active: 0, sync_products: 0, create_orders: 0 };
+    }
+    res.json(config);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/config/woocommerce', authenticateToken, async (req, res) => {
+  const { domain_name, consumer_key, consumer_secret, active, sync_products, create_orders } = req.body;
+  const db = getDb();
+  try {
+    await db.run(
+      `INSERT INTO woocommerce_configs (user_id, domain_name, consumer_key, consumer_secret, active, sync_products, create_orders)
+       VALUES (?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(user_id) DO UPDATE SET
+        domain_name = ?,
+        consumer_key = ?,
+        consumer_secret = ?,
+        active = ?,
+        sync_products = ?,
+        create_orders = ?`,
+      [
+        req.user.id, domain_name, consumer_key, consumer_secret, active, sync_products, create_orders,
+        domain_name, consumer_key, consumer_secret, active, sync_products, create_orders
+      ]
+    );
+    res.json({ success: true, message: 'WooCommerce configuration saved successfully.' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/config/woocommerce/sync', authenticateToken, async (req, res) => {
+  try {
+    const count = await syncWooCommerceProducts(req.user.id);
+    res.json({ success: true, count, message: `Successfully synced ${count} products.` });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

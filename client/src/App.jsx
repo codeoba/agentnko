@@ -114,6 +114,18 @@ export default function App() {
   // Cart States
   const [carts, setCarts] = useState([]);
 
+  // WooCommerce States
+  const [wooConfig, setWooConfig] = useState({
+    domain_name: '',
+    consumer_key: '',
+    consumer_secret: '',
+    active: 0,
+    sync_products: 0,
+    create_orders: 0
+  });
+  const [wooSaveMsg, setWooSaveMsg] = useState('');
+  const [isSyncingWoo, setIsSyncingWoo] = useState(false);
+
   // Fetch current user details on mount/token change
   useEffect(() => {
     if (token) {
@@ -547,11 +559,48 @@ export default function App() {
     }
   };
 
+  const fetchWooConfig = async () => {
+    try {
+      const data = await apiFetch('/api/config/woocommerce');
+      setWooConfig(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleSaveWooConfig = async (e) => {
+    e.preventDefault();
+    setWooSaveMsg('');
+    try {
+      await apiFetch('/api/config/woocommerce', {
+        method: 'POST',
+        body: JSON.stringify(wooConfig)
+      });
+      setWooSaveMsg('WooCommerce configuration updated successfully');
+      setTimeout(() => setWooSaveMsg(''), 4000);
+    } catch (err) {
+      setWooSaveMsg('Error: ' + err.message);
+    }
+  };
+
+  const handleSyncWooProducts = async () => {
+    setIsSyncingWoo(true);
+    try {
+      const data = await apiFetch('/api/config/woocommerce/sync', { method: 'POST' });
+      alert(data.message || 'WooCommerce products synced successfully!');
+    } catch (err) {
+      alert('Sync failed: ' + err.message);
+    } finally {
+      setIsSyncingWoo(false);
+    }
+  };
+
   // Run catalog/coupon/cart fetchers
   useEffect(() => {
     if (!token) return;
     if (activeTab === 'catalog') fetchCatalog();
     if (activeTab === 'coupons') fetchCoupons();
+    if (activeTab === 'woocommerce') fetchWooConfig();
     if (activeTab === 'dashboard') {
       fetchCarts();
     }
@@ -708,6 +757,14 @@ export default function App() {
           >
             <Tag size={20} />
             <span>{t.coupons}</span>
+          </button>
+
+          <button 
+            className={`nav-item ${activeTab === 'woocommerce' ? 'active' : ''}`}
+            onClick={() => setActiveTab('woocommerce')}
+          >
+            <ShoppingBag size={20} />
+            <span>WooCommerce</span>
           </button>
 
           {user && user.role === 'admin' && (
@@ -1801,6 +1858,123 @@ export default function App() {
                     )}
                   </div>
                 </form>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 10: WOOCOMMERCE */}
+        {activeTab === 'woocommerce' && (
+          <div className="tab-pane">
+            <div className="pane-header">
+              <h1>WooCommerce Settings</h1>
+              <p>Connect your WooCommerce store to sync product inventory and capture WhatsApp orders.</p>
+            </div>
+
+            <div className="grid grid-2">
+              {/* Settings Form */}
+              <div className="content-card">
+                <h2>Configure Integration</h2>
+                <form onSubmit={handleSaveWooConfig}>
+                  {wooSaveMsg && (
+                    <div className={`alert ${wooSaveMsg.startsWith('Error') ? 'alert-danger' : 'alert-success'}`}>
+                      {wooSaveMsg}
+                    </div>
+                  )}
+
+                  <div className="form-group">
+                    <label>Domain Name *</label>
+                    <input 
+                      type="url" 
+                      required 
+                      placeholder="https://yourstore.com"
+                      value={wooConfig.domain_name}
+                      onChange={e => setWooConfig({ ...wooConfig, domain_name: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Consumer Key *</label>
+                    <input 
+                      type="text" 
+                      required 
+                      placeholder="ck_..."
+                      value={wooConfig.consumer_key}
+                      onChange={e => setWooConfig({ ...wooConfig, consumer_key: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Consumer Secret *</label>
+                    <input 
+                      type="password" 
+                      required 
+                      placeholder="cs_..."
+                      value={wooConfig.consumer_secret}
+                      onChange={e => setWooConfig({ ...wooConfig, consumer_secret: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Status</label>
+                    <select 
+                      value={wooConfig.active}
+                      onChange={e => setWooConfig({ ...wooConfig, active: parseInt(e.target.value) })}
+                    >
+                      <option value="1">Active</option>
+                      <option value="0">Inactive</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group" style={{ flexDirection: 'row', gap: '10px', alignItems: 'center' }}>
+                    <input 
+                      type="checkbox" 
+                      id="sync_products"
+                      checked={wooConfig.sync_products === 1}
+                      onChange={e => setWooConfig({ ...wooConfig, sync_products: e.target.checked ? 1 : 0 })}
+                    />
+                    <label htmlFor="sync_products" style={{ cursor: 'pointer', fontWeight: 'normal' }}>Import WooCommerce Products</label>
+                  </div>
+
+                  <div className="form-group" style={{ flexDirection: 'row', gap: '10px', alignItems: 'center' }}>
+                    <input 
+                      type="checkbox" 
+                      id="create_orders"
+                      checked={wooConfig.create_orders === 1}
+                      onChange={e => setWooConfig({ ...wooConfig, create_orders: e.target.checked ? 1 : 0 })}
+                    />
+                    <label htmlFor="create_orders" style={{ cursor: 'pointer', fontWeight: 'normal' }}>Create WooCommerce Orders & Send</label>
+                  </div>
+
+                  <div className="button-group mt-3" style={{ display: 'flex', gap: '12px' }}>
+                    <button type="submit" className="btn btn-primary">Save Settings</button>
+                    {wooConfig.active === 1 && (
+                      <button 
+                        type="button" 
+                        className="btn btn-outline"
+                        onClick={handleSyncWooProducts}
+                        disabled={isSyncingWoo}
+                      >
+                        {isSyncingWoo ? <Loader className="spin" size={16} /> : 'Sync Products Now'}
+                      </button>
+                    )}
+                  </div>
+                </form>
+              </div>
+
+              {/* Instructions Guide */}
+              <div className="content-card">
+                <h2>Get Your WooCommerce Keys</h2>
+                <div style={{ color: 'var(--text-secondary)', fontSize: '0.92rem', lineHeight: '1.6' }}>
+                  <p>To integrate with WooCommerce you will need your store URL, consumer key, and consumer secret API keys.</p>
+                  <ol style={{ paddingLeft: '20px', marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <li>Log in to your WordPress admin panel and navigate to <strong>WooCommerce settings</strong>.</li>
+                    <li>Go to the <strong>Advanced</strong> tab, click on <strong>REST API</strong>, and click <strong>Add key</strong>.</li>
+                    <li>Enter a description, select user, and set permissions to <strong>Read/Write</strong>, then generate the API keys.</li>
+                    <li>Copy the <strong>Consumer Key</strong> and <strong>Consumer Secret</strong> and paste them in the settings form.</li>
+                    <li>Your store URL is usually in the format: <code>https://yourstore.com</code></li>
+                  </ol>
+                </div>
               </div>
             </div>
           </div>
