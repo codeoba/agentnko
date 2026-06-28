@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { 
   translations 
 } from './utils/i18n.js';
@@ -869,7 +869,7 @@ export default function App() {
         
         {/* TAB 1: DASHBOARD */}
         {activeTab === 'dashboard' && (
-          <div className="tab-pane">
+          <div className="page-container">
             {/* Elite Welcome Banner Hero */}
             <div className="hero-welcome-banner">
               <h1>Habari, {user.name}!</h1>
@@ -1023,7 +1023,7 @@ export default function App() {
 
         {/* TAB: AUTOMATION FLOWS */}
         {activeTab === 'automations' && (
-          <div className="tab-pane">
+          <div className="page-container">
             <div className="pane-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <h1>Automation Flows</h1>
@@ -1292,7 +1292,7 @@ export default function App() {
 
         {/* TAB: UNIFIED SETTINGS */}
         {activeTab === 'settings' && (
-          <div className="tab-pane">
+          <div className="page-container">
             <div className="pane-header">
               <h1>Settings</h1>
               <p>Configure your application channels, AI instructions, eCommerce sync, and subscription billing.</p>
@@ -1992,7 +1992,7 @@ export default function App() {
 
         {/* TAB 5: CAMPAIGNS */}
         {activeTab === 'campaigns' && (
-          <div className="tab-pane">
+          <div className="page-container">
             <div className="pane-header">
               <h1>{t.campaignTitle}</h1>
               <p>Schedule and dispatch bulk marketing/promotional notifications.</p>
@@ -2079,7 +2079,7 @@ export default function App() {
 
         {/* TAB 7: SUPER ADMIN */}
         {activeTab === 'admin' && user.role === 'admin' && (
-          <div className="tab-pane">
+          <div className="page-container">
             <div className="pane-header">
               <h1>{t.superAdmin}</h1>
               <p>Manage SaaS users, subscription billing, and override permissions.</p>
@@ -2208,7 +2208,7 @@ export default function App() {
 
         {/* TAB 8: CATALOG */}
         {activeTab === 'catalog' && (
-          <div className="tab-pane">
+          <div className="page-container">
             <div className="pane-header">
               <h1>{t.catalog}</h1>
               <p>Manage product items, prices, and stock status. The AI Agent will read this catalog dynamically.</p>
@@ -2333,7 +2333,7 @@ export default function App() {
 
         {/* TAB 9: COUPONS */}
         {activeTab === 'coupons' && (
-          <div className="tab-pane">
+          <div className="page-container">
             <div className="pane-header">
               <h1>{t.coupons}</h1>
               <p>Create discount promo codes. The AI Agent will read active coupons and apply discounts automatically during checkout.</p>
