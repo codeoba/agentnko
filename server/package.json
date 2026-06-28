@@ -1,0 +1,26 @@
+{
+  "name": "agentnko-server",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "@whiskeysockets/baileys": "^6.7.7",
+    "express": "^4.19.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "jsonwebtoken": "^9.0.2",
+    "bcryptjs": "^2.4.3",
+    "sqlite": "^5.1.1",
+    "sqlite3": "^5.1.7",
+    "qrcode": "^1.5.3",
+    "pino": "^9.2.0",
+    "uuid": "^10.0.0",
+    "@google/generative-ai": "^0.13.0",
+    "openai": "^4.52.0",
+    "@anthropic-ai/sdk": "^0.24.0"
+  }
+}
