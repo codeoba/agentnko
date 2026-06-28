@@ -56,7 +56,9 @@ export async function startWhatsappSession(userId) {
   // Create quiet logger
   const logger = pino({ level: 'silent' });
 
-  const sock = makeWASocket.default({
+  const makeSocket = makeWASocket.default || makeWASocket;
+
+  const sock = makeSocket({
     version,
     auth: state,
     logger,
