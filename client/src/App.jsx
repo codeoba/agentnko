@@ -797,7 +797,7 @@ export default function App() {
                       />
                       <span className="slider"></span>
                     </label>
-                    <span className="checkbox-label">{aiConfig.enabled === 1 ? t.enableAI : t.disableAI}</span>
+                    <span className="checkbox-label">{aiConfig.enabled === 1 ? t.disableAI : t.enableAI}</span>
                   </div>
                 </div>
 
