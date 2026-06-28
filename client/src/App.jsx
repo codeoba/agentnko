@@ -34,8 +34,29 @@ import {
   MoreVertical,
   RefreshCw,
   Cpu,
-  PlayCircle
+  PlayCircle,
+  BarChart3,
+  Target,
+  Clock,
+  Filter,
+  Globe,
+  FlaskConical,
+  ShieldCheck,
+  UserCheck,
+  Zap
 } from 'lucide-react';
+
+// Enterprise Components
+import AnalyticsDashboard from './components/AnalyticsDashboard.jsx';
+import LeadScoring from './components/LeadScoring.jsx';
+import ScheduledMessages from './components/ScheduledMessages.jsx';
+import ContactSegments from './components/ContactSegments.jsx';
+import QuickReplies from './components/QuickReplies.jsx';
+import OrderManager from './components/OrderManager.jsx';
+import TeamInbox from './components/TeamInbox.jsx';
+import WebhookManager from './components/WebhookManager.jsx';
+import ABTesting from './components/ABTesting.jsx';
+import ComplianceManager from './components/ComplianceManager.jsx';
 
 
 export default function App() {
@@ -824,6 +845,92 @@ export default function App() {
             <Cpu size={20} />
             <span>Automations</span>
           </button>
+
+          {/* ===== ENTERPRISE NAV ===== */}
+          <div className="nav-section-label">Enterprise</div>
+
+          <button 
+            className={`nav-item ${activeTab === 'analytics' ? 'active' : ''}`}
+            onClick={() => setActiveTab('analytics')}
+          >
+            <BarChart3 size={20} />
+            <span>Analytics</span>
+          </button>
+
+          <button 
+            className={`nav-item ${activeTab === 'lead-scoring' ? 'active' : ''}`}
+            onClick={() => setActiveTab('lead-scoring')}
+          >
+            <Target size={20} />
+            <span>Lead Scoring</span>
+          </button>
+
+          <button 
+            className={`nav-item ${activeTab === 'orders' ? 'active' : ''}`}
+            onClick={() => setActiveTab('orders')}
+          >
+            <ShoppingBag size={20} />
+            <span>Orders</span>
+          </button>
+
+          <button 
+            className={`nav-item ${activeTab === 'scheduled' ? 'active' : ''}`}
+            onClick={() => setActiveTab('scheduled')}
+          >
+            <Clock size={20} />
+            <span>Scheduled</span>
+          </button>
+
+          <button 
+            className={`nav-item ${activeTab === 'segments' ? 'active' : ''}`}
+            onClick={() => setActiveTab('segments')}
+          >
+            <Filter size={20} />
+            <span>Segments</span>
+          </button>
+
+          <button 
+            className={`nav-item ${activeTab === 'templates' ? 'active' : ''}`}
+            onClick={() => setActiveTab('templates')}
+          >
+            <FileText size={20} />
+            <span>Templates</span>
+          </button>
+
+          <button 
+            className={`nav-item ${activeTab === 'team' ? 'active' : ''}`}
+            onClick={() => setActiveTab('team')}
+          >
+            <UserCheck size={20} />
+            <span>Team</span>
+          </button>
+
+          <button 
+            className={`nav-item ${activeTab === 'webhooks' ? 'active' : ''}`}
+            onClick={() => setActiveTab('webhooks')}
+          >
+            <Globe size={20} />
+            <span>Webhooks & API</span>
+          </button>
+
+          <button 
+            className={`nav-item ${activeTab === 'abtesting' ? 'active' : ''}`}
+            onClick={() => setActiveTab('abtesting')}
+          >
+            <FlaskConical size={20} />
+            <span>A/B Testing</span>
+          </button>
+
+          <button 
+            className={`nav-item ${activeTab === 'compliance' ? 'active' : ''}`}
+            onClick={() => setActiveTab('compliance')}
+          >
+            <ShieldCheck size={20} />
+            <span>Compliance</span>
+          </button>
+
+          {/* ===== SETTINGS & ADMIN ===== */}
+          <div className="nav-section-label">Mfumo</div>
 
           <button 
             className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`}
@@ -2813,6 +2920,79 @@ export default function App() {
             </div>
           </div>
         )}
+
+        {/* ===== ENTERPRISE TABS ===== */}
+
+        {/* Analytics Dashboard */}
+        {activeTab === 'analytics' && (
+          <div className="page-container">
+            <AnalyticsDashboard apiFetch={apiFetch} t={t} />
+          </div>
+        )}
+
+        {/* Lead Scoring */}
+        {activeTab === 'lead-scoring' && (
+          <div className="page-container">
+            <LeadScoring apiFetch={apiFetch} />
+          </div>
+        )}
+
+        {/* Order Management */}
+        {activeTab === 'orders' && (
+          <div className="page-container">
+            <OrderManager apiFetch={apiFetch} />
+          </div>
+        )}
+
+        {/* Scheduled Messages */}
+        {activeTab === 'scheduled' && (
+          <div className="page-container">
+            <ScheduledMessages apiFetch={apiFetch} />
+          </div>
+        )}
+
+        {/* Contact Segments */}
+        {activeTab === 'segments' && (
+          <div className="page-container">
+            <ContactSegments apiFetch={apiFetch} />
+          </div>
+        )}
+
+        {/* Quick Reply Templates */}
+        {activeTab === 'templates' && (
+          <div className="page-container">
+            <QuickReplies apiFetch={apiFetch} />
+          </div>
+        )}
+
+        {/* Team Inbox */}
+        {activeTab === 'team' && (
+          <div className="page-container">
+            <TeamInbox apiFetch={apiFetch} />
+          </div>
+        )}
+
+        {/* Webhooks & API */}
+        {activeTab === 'webhooks' && (
+          <div className="page-container">
+            <WebhookManager apiFetch={apiFetch} user={user} />
+          </div>
+        )}
+
+        {/* A/B Testing */}
+        {activeTab === 'abtesting' && (
+          <div className="page-container">
+            <ABTesting apiFetch={apiFetch} />
+          </div>
+        )}
+
+        {/* Compliance & Opt-Out */}
+        {activeTab === 'compliance' && (
+          <div className="page-container">
+            <ComplianceManager apiFetch={apiFetch} />
+          </div>
+        )}
+
       </main>
     </div>
   );
