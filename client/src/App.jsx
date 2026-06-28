@@ -21,7 +21,8 @@ import {
   CheckCircle,
   AlertTriangle,
   Loader,
-  Play
+  Play,
+  Shield
 } from 'lucide-react';
 
 export default function App() {
@@ -81,6 +82,13 @@ export default function App() {
   const [payProvider, setPayProvider] = useState('mpesa');
   const [payStatus, setPayStatus] = useState('');
   const [payRef, setPayRef] = useState('');
+
+  // Admin States
+  const [adminUsers, setAdminUsers] = useState([]);
+  const [adminPayments, setAdminPayments] = useState([]);
+  const [adminSearch, setAdminSearch] = useState('');
+  const [selectedAdminUser, setSelectedAdminUser] = useState(null);
+  const [adminPlanForm, setAdminPlanForm] = useState({ plan: 'pro', days: 30 });
 
   // Fetch current user details on mount/token change
   useEffect(() => {
@@ -372,6 +380,61 @@ export default function App() {
     }
   };
 
+  // Admin helper API calls
+  const fetchAdminUsers = async () => {
+    try {
+      const data = await apiFetch('/api/admin/users');
+      setAdminUsers(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const fetchAdminPayments = async () => {
+    try {
+      const data = await apiFetch('/api/admin/payments');
+      setAdminPayments(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleUpdateUserPlan = async (e) => {
+    e.preventDefault();
+    if (!selectedAdminUser) return;
+    try {
+      await apiFetch(`/api/admin/users/${selectedAdminUser.id}/plan`, {
+        method: 'POST',
+        body: JSON.stringify(adminPlanForm)
+      });
+      alert('Plan updated successfully');
+      setSelectedAdminUser(null);
+      fetchAdminUsers();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleDeleteUser = async (userId) => {
+    if (!confirm('Are you sure you want to delete this user?')) return;
+    try {
+      await apiFetch(`/api/admin/users/${userId}`, { method: 'DELETE' });
+      alert('User deleted successfully');
+      fetchAdminUsers();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  // Run admin fetchers
+  useEffect(() => {
+    if (!user) return;
+    if (activeTab === 'admin' && user.role === 'admin') {
+      fetchAdminUsers();
+      fetchAdminPayments();
+    }
+  }, [activeTab, user]);
+
   // Filtered contacts list
   const filteredContacts = contacts.filter(c => 
     c.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -508,6 +571,16 @@ export default function App() {
             <CreditCard size={20} />
             <span>{t.billing}</span>
           </button>
+
+          {user && user.role === 'admin' && (
+            <button 
+              className={`nav-item ${activeTab === 'admin' ? 'active text-warning' : 'text-warning'}`}
+              onClick={() => setActiveTab('admin')}
+            >
+              <Shield size={20} />
+              <span>{t.superAdmin}</span>
+            </button>
+          )}
         </nav>
 
         <div className="sidebar-footer">
@@ -1084,6 +1157,135 @@ export default function App() {
                 )}
               </div>
             )}
+          </div>
+        )}
+
+        {/* TAB 7: SUPER ADMIN */}
+        {activeTab === 'admin' && user.role === 'admin' && (
+          <div className="tab-pane">
+            <div className="pane-header">
+              <h1>{t.superAdmin}</h1>
+              <p>Manage SaaS users, subscription billing, and override permissions.</p>
+            </div>
+
+            <div className="grid grid-2">
+              {/* Users list management */}
+              <div className="content-card">
+                <h2>{t.userManagement}</h2>
+                <div className="search-bar-wrapper mb-3">
+                  <Search size={18} />
+                  <input 
+                    type="text" 
+                    placeholder="Search users..." 
+                    value={adminSearch}
+                    onChange={e => setAdminSearch(e.target.value)}
+                  />
+                </div>
+
+                <div className="logs-list" style={{ maxHeight: '400px' }}>
+                  {adminUsers
+                    .filter(u => u.name?.toLowerCase().includes(adminSearch.toLowerCase()) || u.email?.toLowerCase().includes(adminSearch.toLowerCase()))
+                    .map(u => (
+                      <div key={u.id} className="log-item" style={{ marginBottom: '8px', padding: '12px' }}>
+                        <div className="log-header">
+                          <h4>{u.name} ({u.role})</h4>
+                          <span className={`badge badge-${u.plan === 'free' ? 'failed' : 'completed'}`}>
+                            {u.plan.toUpperCase()}
+                          </span>
+                        </div>
+                        <p className="log-text" style={{ fontSize: '0.85rem' }}>{u.email}</p>
+                        <p className="log-text" style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                          Expires: {u.active_until ? new Date(u.active_until).toLocaleDateString() : 'Lifetime'}
+                        </p>
+                        <div className="button-group mt-2" style={{ display: 'flex', gap: '8px' }}>
+                          <button 
+                            className="btn btn-outline" 
+                            style={{ padding: '4px 8px', fontSize: '0.75rem' }}
+                            onClick={() => {
+                              setSelectedAdminUser(u);
+                              setAdminPlanForm({ plan: u.plan, days: 30 });
+                            }}
+                          >
+                            {t.changePlan}
+                          </button>
+                          {u.email !== 'nurwaka@gmail.com' && (
+                            <button 
+                              className="btn btn-danger" 
+                              style={{ padding: '4px 8px', fontSize: '0.75rem' }}
+                              onClick={() => handleDeleteUser(u.id)}
+                            >
+                              {t.delete}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  }
+                </div>
+              </div>
+
+              {/* Adjust plan form / Details panel */}
+              <div className="content-card">
+                {selectedAdminUser ? (
+                  <div>
+                    <h2>Adjust Plan: {selectedAdminUser.name}</h2>
+                    <form onSubmit={handleUpdateUserPlan}>
+                      <div className="form-group">
+                        <label>SaaS Package</label>
+                        <select 
+                          value={adminPlanForm.plan}
+                          onChange={e => setAdminPlanForm({ ...adminPlanForm, plan: e.target.value })}
+                        >
+                          <option value="free">Free</option>
+                          <option value="pro">Pro Agent</option>
+                          <option value="premium">Elite Enterprise</option>
+                        </select>
+                      </div>
+
+                      <div className="form-group">
+                        <label>{t.days} (Validity from now)</label>
+                        <input 
+                          type="number"
+                          value={adminPlanForm.days}
+                          onChange={e => setAdminPlanForm({ ...adminPlanForm, days: parseInt(e.target.value) })}
+                        />
+                      </div>
+
+                      <div className="button-group">
+                        <button type="submit" className="btn btn-primary">Update Plan</button>
+                        <button type="button" className="btn btn-outline" onClick={() => setSelectedAdminUser(null)}>Cancel</button>
+                      </div>
+                    </form>
+                  </div>
+                ) : (
+                  <div>
+                    <h2>{t.paymentsLog}</h2>
+                    <div className="logs-list" style={{ maxHeight: '400px' }}>
+                      {adminPayments.length === 0 ? (
+                        <p>No payments recorded yet.</p>
+                      ) : (
+                        adminPayments.map(p => (
+                          <div key={p.id} className="log-item" style={{ marginBottom: '8px', padding: '12px' }}>
+                            <div className="log-header">
+                              <h4>{p.reference}</h4>
+                              <span className={`badge badge-${p.status === 'success' ? 'completed' : 'failed'}`}>
+                                {p.status.toUpperCase()}
+                              </span>
+                            </div>
+                            <p className="log-text" style={{ fontSize: '0.8rem' }}>
+                              User: {p.user_email} <br />
+                              Phone: {p.phone_number} <br />
+                              Amount: {p.amount.toLocaleString()} TZS ({p.provider.toUpperCase()})
+                            </p>
+                            <span className="log-time">{new Date(p.created_at).toLocaleString()}</span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
       </main>

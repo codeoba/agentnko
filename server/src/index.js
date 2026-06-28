@@ -27,6 +27,25 @@ app.use(express.json());
 async function startServer() {
   await initDb();
   
+  const db = getDb();
+  // Seed Super Admin
+  const adminEmail = 'nurwaka@gmail.com';
+  const existingAdmin = await db.get('SELECT * FROM users WHERE email = ?', [adminEmail]);
+  if (!existingAdmin) {
+    const hashedPassword = await bcrypt.hash('Mdandu22//', 10);
+    const result = await db.run(
+      `INSERT INTO users (name, email, password, plan, role) 
+       VALUES ('Super Admin', ?, ?, 'premium', 'admin')`,
+      [adminEmail, hashedPassword]
+    );
+    // Also create default AI config for admin
+    await db.run(
+      `INSERT INTO ai_configs (user_id, provider, model, enabled) VALUES (?, 'gemini', 'gemini-1.5-flash', 0)`,
+      [result.lastID]
+    );
+    console.log(`Seeded Super Admin user: ${adminEmail}`);
+  }
+
   // Restore previously active WhatsApp connections
   await initAllSessions();
 
@@ -71,8 +90,8 @@ app.post('/api/auth/register', async (req, res) => {
       [result.lastID]
     );
 
-    const token = jwt.sign({ id: result.lastID, email, name }, JWT_SECRET, { expiresIn: '7d' });
-    res.json({ token, user: { id: result.lastID, name, email, plan: 'free', active_until: null } });
+    const token = jwt.sign({ id: result.lastID, email, name, role: 'user' }, JWT_SECRET, { expiresIn: '7d' });
+    res.json({ token, user: { id: result.lastID, name, email, plan: 'free', role: 'user', active_until: null } });
   } catch (err) {
     if (err.message.includes('UNIQUE constraint failed')) {
       return res.status(400).json({ error: 'Email already exists' });
@@ -95,7 +114,7 @@ app.post('/api/auth/login', async (req, res) => {
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) return res.status(400).json({ error: 'Invalid password' });
 
-    const token = jwt.sign({ id: user.id, email: user.email, name: user.name }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ id: user.id, email: user.email, name: user.name, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
     res.json({ 
       token, 
       user: { 
@@ -103,6 +122,7 @@ app.post('/api/auth/login', async (req, res) => {
         name: user.name, 
         email: user.email, 
         plan: user.plan, 
+        role: user.role,
         active_until: user.active_until 
       } 
     });
@@ -114,7 +134,7 @@ app.post('/api/auth/login', async (req, res) => {
 app.get('/api/auth/me', authenticateToken, async (req, res) => {
   const db = getDb();
   try {
-    const user = await db.get('SELECT id, name, email, plan, active_until FROM users WHERE id = ?', [req.user.id]);
+    const user = await db.get('SELECT id, name, email, plan, active_until, role FROM users WHERE id = ?', [req.user.id]);
     res.json(user);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -370,6 +390,84 @@ app.get('/api/payments/status/:reference', authenticateToken, async (req, res) =
     const payment = await getPaymentStatus(req.params.reference);
     if (!payment) return res.status(404).json({ error: 'Transaction reference not found' });
     res.json(payment);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ================= SUPER ADMIN ROUTES =================
+
+async function requireAdmin(req, res, next) {
+  const db = getDb();
+  try {
+    const user = await db.get('SELECT role FROM users WHERE id = ?', [req.user.id]);
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden: Admin access required' });
+    }
+    next();
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
+app.get('/api/admin/users', authenticateToken, requireAdmin, async (req, res) => {
+  const db = getDb();
+  try {
+    const users = await db.all('SELECT id, name, email, plan, active_until, role, created_at FROM users ORDER BY created_at DESC');
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/admin/users/:id/plan', authenticateToken, requireAdmin, async (req, res) => {
+  const { plan, days } = req.body;
+  if (!plan) return res.status(400).json({ error: 'Plan is required' });
+
+  const db = getDb();
+  try {
+    let activeUntil = null;
+    if (days && days > 0) {
+      const expirationDate = new Date();
+      expirationDate.setDate(expirationDate.getDate() + parseInt(days));
+      activeUntil = expirationDate.toISOString().slice(0, 19).replace('T', ' ');
+    }
+
+    await db.run(
+      'UPDATE users SET plan = ?, active_until = ? WHERE id = ?',
+      [plan, activeUntil, req.params.id]
+    );
+
+    res.json({ success: true, message: 'User plan updated successfully.' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/admin/users/:id', authenticateToken, requireAdmin, async (req, res) => {
+  const db = getDb();
+  try {
+    // Delete user session if active
+    try {
+      await stopWhatsappSession(req.params.id);
+    } catch (_) {}
+
+    await db.run('DELETE FROM users WHERE id = ?', [req.params.id]);
+    res.json({ success: true, message: 'User deleted successfully.' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/admin/payments', authenticateToken, requireAdmin, async (req, res) => {
+  const db = getDb();
+  try {
+    const payments = await db.all(
+      `SELECT p.*, u.email as user_email FROM payments p 
+       LEFT JOIN users u ON p.user_id = u.id 
+       ORDER BY p.created_at DESC`
+    );
+    res.json(payments);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

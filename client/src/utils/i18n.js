@@ -96,7 +96,17 @@ export const translations = {
     payNow: "Pay and Upgrade",
     paymentProcessing: "Requesting PIN confirmation on your phone...",
     paymentSuccess: "Payment successful! Your account has been upgraded.",
-    currency: "TZS"
+    currency: "TZS",
+    superAdmin: "Super Admin",
+    userManagement: "User Management",
+    allUsers: "All Users",
+    actions: "Actions",
+    role: "Role",
+    paymentsLog: "Payments Log",
+    changePlan: "Change Plan",
+    delete: "Delete",
+    days: "Days",
+    userEmail: "User Email"
   },
   sw: {
     brand: "AgentNKO",
@@ -195,6 +205,16 @@ export const translations = {
     payNow: "Lipia Sasa",
     paymentProcessing: "Tafadhali weka PIN ya malipo kwenye simu yako...",
     paymentSuccess: "Malipo yamekamilika vizuri! Akaunti yako imeboreshwa.",
-    currency: "TZS"
+    currency: "TZS",
+    superAdmin: "Usimamizi Mkuu (SaaS)",
+    userManagement: "Usimamizi wa Watumiaji",
+    allUsers: "Watumiaji Wote",
+    actions: "Vitendo",
+    role: "Wajibu",
+    paymentsLog: "Miamala ya Malipo",
+    changePlan: "Badili Kifurushi",
+    delete: "Futa",
+    days: "Siku",
+    userEmail: "Barua Pepe ya Mtumiaji"
   }
 };

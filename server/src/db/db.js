@@ -26,6 +26,7 @@ export async function initDb() {
       password TEXT NOT NULL,
       plan TEXT DEFAULT 'free',
       active_until DATETIME,
+      role TEXT DEFAULT 'user',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -103,6 +104,15 @@ export async function initDb() {
   `);
 
   console.log('SQLite Database initialized successfully.');
+
+  // Migration: Add role column to users if it doesn't exist
+  const columns = await db.all("PRAGMA table_info(users)");
+  const hasRole = columns.some(c => c.name === 'role');
+  if (!hasRole) {
+    await db.exec("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'user'");
+    console.log("Migration: Added role column to users table.");
+  }
+
   return db;
 }
 
