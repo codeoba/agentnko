@@ -2493,6 +2493,8 @@ export default function App() {
                 )}
               </div>
             )}
+          </div>
+        )}
 
         {/* TAB 4: CRM CONTACTS */}
         {activeTab === 'crm' && (
