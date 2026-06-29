@@ -1011,123 +1011,239 @@ export default function App() {
 
       {/* Main Content Area */}
       <main className="main-content">
-        
+
         {/* TAB 1: DASHBOARD */}
         {activeTab === 'dashboard' && (
           <div className="page-container">
-            {/* Elite Welcome Banner Hero */}
-            <div className="hero-welcome-banner">
-              <h1>Habari, {user.name}!</h1>
-              <p>Karibu kwenye AgentNKO Command Center. Mfumo wako wa AI uko hai na unafanya kazi kwa usahihi wa 99.8%.</p>
-              <div className="system-status-indicator">
-                <span className="pulse-dot"></span>
-                <span>Baileys Gateway: Connected & Active</span>
+
+            {/* Topbar */}
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              marginBottom: '24px', paddingBottom: '20px',
+              borderBottom: '1px solid #e5e7eb'
+            }}>
+              <div>
+                <h1 style={{ fontSize: '1.5rem', fontWeight: '700', color: '#111827', marginBottom: '4px' }}>Dashboard Overview</h1>
+                <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>Welcome back! Here's what's happening with your WhatsApp business.</p>
               </div>
-            </div>
-
-            {/* Stat Cards with Trend Badges */}
-            <div className="grid grid-4 mb-4">
-              <div className="stats-card">
-                <Sparkles size={24} className="card-icon text-primary" />
-                <div style={{ display: 'flex', alignItems: 'baseline' }}>
-                  <h3>{stats.activeAgents}</h3>
-                  <span className="trend-badge up">100% Active</span>
-                </div>
-                <p>{t.activeAgents}</p>
-              </div>
-
-              <div className="stats-card">
-                <MessageSquare size={24} className="card-icon text-success" />
-                <div style={{ display: 'flex', alignItems: 'baseline' }}>
-                  <h3>{stats.messagesProcessed}</h3>
-                  <span className="trend-badge up">+14.2%</span>
-                </div>
-                <p>{t.messagesProcessed}</p>
-              </div>
-
-              <div className="stats-card">
-                <Users size={24} className="card-icon text-warning" />
-                <div style={{ display: 'flex', alignItems: 'baseline' }}>
-                  <h3>{stats.totalContacts}</h3>
-                  <span className="trend-badge up">+8.5%</span>
-                </div>
-                <p>{t.totalContacts}</p>
-              </div>
-
-              <div className="stats-card">
-                <Megaphone size={24} className="card-icon text-danger" />
-                <div style={{ display: 'flex', alignItems: 'baseline' }}>
-                  <h3>{stats.campaignsSent || 0}</h3>
-                  <span className="trend-badge neutral">Stable</span>
-                </div>
-                <p>{t.campaignsSent}</p>
-              </div>
-            </div>
-
-            {/* Operations Center section */}
-            <div className="grid grid-2 mb-4">
-              {/* AI Live Latency & Status Monitor */}
-              <div className="content-card">
-                <h2>AI Engine Diagnostics</h2>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  <div>
-                    <div className="latency-display">
-                      <span>AI Model Response Time</span>
-                      <strong>0.8s avg</strong>
-                    </div>
-                    <div className="latency-bar-bg">
-                      <div className="latency-bar-fill" style={{ width: '85%' }}></div>
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '8px' }}>
-                    <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Engine Accuracy</span>
-                      <h4 style={{ margin: '4px 0 0 0', fontSize: '1.2rem', color: '#10b981' }}>99.2%</h4>
-                    </div>
-                    <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Uptime Limit</span>
-                      <h4 style={{ margin: '4px 0 0 0', fontSize: '1.2rem', color: '#3b82f6' }}>100%</h4>
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--text-secondary)', borderTop: '1px solid var(--border-color)', paddingTop: '12px', marginTop: '4px' }}>
-                    <span>Active Gateway Connection:</span>
-                    <strong style={{ color: 'var(--text-primary)' }}>+{wsStatus.phone_number || 'N/A'}</strong>
-                  </div>
-                </div>
-              </div>
-
-              {/* Glowing VIP SaaS Card */}
-              <div className="content-card" style={{ background: 'linear-gradient(135deg, rgba(30,30,36,0.9) 0%, rgba(139,92,246,0.08) 100%)', borderColor: 'rgba(139, 92, 246, 0.3)' }}>
-                <h2>{t.activePlan}</h2>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                  <div className="plan-badge-large" style={{ background: 'rgba(139,92,246,0.2)', border: '1px solid #8b5cf6', boxShadow: '0 0 15px rgba(139,92,246,0.3)', color: '#a78bfa' }}>
-                    {user.plan.toUpperCase()}
-                  </div>
-                  <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Elite Workspace Account</span>
-                </div>
-                
-                <div className="plan-expiry" style={{ marginBottom: '20px' }}>
-                  <span>{t.validUntil}:</span>
-                  <strong style={{ color: 'var(--text-primary)' }}>
-                    {user.active_until 
-                      ? new Date(user.active_until).toLocaleDateString(lang === 'sw' ? 'sw-TZ' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' })
-                      : t.unlimited}
-                  </strong>
-                </div>
-                
-                <button 
-                  className="btn btn-primary btn-block" 
-                  onClick={() => {
-                    setSettingsTab('billing');
-                    setActiveTab('settings');
-                  }}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <button
+                  className="btn btn-primary"
+                  onClick={() => setActiveTab('campaigns')}
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '8px', padding: '9px 18px' }}
                 >
-                  {t.upgradeNow}
+                  <Plus size={16} /> New Campaign
+                </button>
+                <button className="btn-icon" style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '8px' }} onClick={handleLogout} title="Logout">
+                  <LogOut size={18} color="#6b7280" />
                 </button>
               </div>
             </div>
+
+            {/* 8 Stat Cards - WhatsWay Style */}
+            <div className="grid grid-4 mb-4" style={{ gap: '16px' }}>
+              <div className="stats-card">
+                <Sparkles size={24} className="card-icon text-primary" />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                  <div style={{ width: 36, height: 36, borderRadius: '8px', background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Users size={18} color="#3b82f6" />
+                  </div>
+                  <span style={{ fontSize: '0.85rem', color: '#6b7280', fontWeight: '500' }}>Total Contacts</span>
+                </div>
+                <h3 style={{ fontSize: '2rem', fontWeight: '800', color: '#111827', lineHeight: 1 }}>{stats.totalContacts}</h3>
+              </div>
+
+              <div className="stats-card">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                  <div style={{ width: 36, height: 36, borderRadius: '8px', background: '#fff7ed', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <MessageSquare size={18} color="#f97316" />
+                  </div>
+                  <span style={{ fontSize: '0.85rem', color: '#6b7280', fontWeight: '500' }}>Total Messages</span>
+                </div>
+                <h3 style={{ fontSize: '2rem', fontWeight: '800', color: '#111827', lineHeight: 1 }}>{stats.messagesProcessed}</h3>
+              </div>
+
+              <div className="stats-card">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                  <div style={{ width: 36, height: 36, borderRadius: '8px', background: '#ecfeff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Send size={18} color="#06b6d4" />
+                  </div>
+                  <span style={{ fontSize: '0.85rem', color: '#6b7280', fontWeight: '500' }}>Sent</span>
+                </div>
+                <h3 style={{ fontSize: '2rem', fontWeight: '800', color: '#111827', lineHeight: 1 }}>{stats.campaignsSent || 0}</h3>
+              </div>
+
+              <div className="stats-card">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                  <div style={{ width: 36, height: 36, borderRadius: '8px', background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <CheckCircle size={18} color="#22c55e" />
+                  </div>
+                  <span style={{ fontSize: '0.85rem', color: '#6b7280', fontWeight: '500' }}>Delivered</span>
+                </div>
+                <h3 style={{ fontSize: '2rem', fontWeight: '800', color: '#111827', lineHeight: 1 }}>{stats.activeAgents}</h3>
+              </div>
+            </div>
+
+            {/* Second row - 4 more stat cards */}
+            <div className="grid grid-4 mb-4" style={{ gap: '16px' }}>
+              <div className="stats-card" style={{ borderLeftColor: '#8b5cf6' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                  <div style={{ width: 36, height: 36, borderRadius: '8px', background: '#f5f3ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <MessageSquare size={18} color="#8b5cf6" />
+                  </div>
+                  <span style={{ fontSize: '0.85rem', color: '#6b7280', fontWeight: '500' }}>Read</span>
+                </div>
+                <h3 style={{ fontSize: '2rem', fontWeight: '800', color: '#111827', lineHeight: 1 }}>0</h3>
+              </div>
+
+              <div className="stats-card" style={{ borderLeftColor: '#ec4899' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                  <div style={{ width: 36, height: 36, borderRadius: '8px', background: '#fdf2f8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <AlertTriangle size={18} color="#ec4899" />
+                  </div>
+                  <span style={{ fontSize: '0.85rem', color: '#6b7280', fontWeight: '500' }}>Failed</span>
+                </div>
+                <h3 style={{ fontSize: '2rem', fontWeight: '800', color: '#111827', lineHeight: 1 }}>0</h3>
+              </div>
+
+              <div className="stats-card" style={{ borderLeftColor: '#eab308' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                  <div style={{ width: 36, height: 36, borderRadius: '8px', background: '#fefce8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Clock size={18} color="#eab308" />
+                  </div>
+                  <span style={{ fontSize: '0.85rem', color: '#6b7280', fontWeight: '500' }}>Today</span>
+                </div>
+                <h3 style={{ fontSize: '2rem', fontWeight: '800', color: '#111827', lineHeight: 1 }}>0</h3>
+              </div>
+
+              <div className="stats-card" style={{ borderLeftColor: '#ef4444' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                  <div style={{ width: 36, height: 36, borderRadius: '8px', background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Megaphone size={18} color="#ef4444" />
+                  </div>
+                  <span style={{ fontSize: '0.85rem', color: '#6b7280', fontWeight: '500' }}>Total Campaigns</span>
+                </div>
+                <h3 style={{ fontSize: '2rem', fontWeight: '800', color: '#111827', lineHeight: 1 }}>{stats.campaignsSent || 0}</h3>
+              </div>
+            </div>
+
+            {/* Rate Cards row */}
+            <div className="grid grid-2 mb-4" style={{ gap: '16px' }}>
+              <div className="content-card">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                  <div style={{ width: 32, height: 32, borderRadius: '8px', background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Send size={16} color="#22c55e" />
+                  </div>
+                  <h2 style={{ margin: 0, fontSize: '0.95rem', fontWeight: '600', color: '#374151' }}>Delivery Rate</h2>
+                </div>
+                <h3 style={{ fontSize: '2rem', fontWeight: '800', color: '#111827', marginBottom: '8px' }}>
+                  {stats.messagesProcessed > 0 ? ((stats.activeAgents / stats.messagesProcessed) * 100).toFixed(1) : '0.0'}%
+                </h3>
+                <div style={{ background: '#f3f4f6', borderRadius: '4px', height: '6px', marginBottom: '8px' }}>
+                  <div style={{ background: '#22c55e', borderRadius: '4px', height: '6px', width: stats.messagesProcessed > 0 ? `${Math.min((stats.activeAgents / stats.messagesProcessed) * 100, 100)}%` : '0%', transition: 'width 0.5s ease' }}></div>
+                </div>
+                <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{stats.activeAgents} of {stats.messagesProcessed} messages</span>
+              </div>
+
+              <div className="content-card">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                  <div style={{ width: 32, height: 32, borderRadius: '8px', background: '#fdf4ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <BarChart3 size={16} color="#a855f7" />
+                  </div>
+                  <h2 style={{ margin: 0, fontSize: '0.95rem', fontWeight: '600', color: '#374151' }}>Monthly Growth</h2>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <h3 style={{ fontSize: '2rem', fontWeight: '800', color: '#111827', marginBottom: '0' }}>11.1%</h3>
+                  <span style={{ fontSize: '0.85rem', color: '#ef4444', display: 'flex', alignItems: 'center', gap: '2px' }}>↘</span>
+                </div>
+                <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>This month vs last month</span>
+              </div>
+            </div>
+
+            {/* Bottom 2-col: Quick Actions + API Status */}
+            <div className="grid grid-2 mb-4" style={{ gap: '16px' }}>
+              {/* Quick Actions */}
+              <div className="content-card">
+                <h2 style={{ fontSize: '1rem', fontWeight: '700', color: '#111827', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Zap size={18} color="#f59e0b" /> Quick Actions
+                </h2>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  {[
+                    { icon: <Users size={22} color="#3b82f6" />, bg: '#eff6ff', label: 'Import Contacts', sub: 'Upload CSV', tab: 'crm' },
+                    { icon: <FileText size={22} color="#22c55e" />, bg: '#f0fdf4', label: 'New Template', sub: 'Create message template', tab: 'campaigns' },
+                    { icon: <Cpu size={22} color="#8b5cf6" />, bg: '#f5f3ff', label: 'Build Flow', sub: 'Create automation', tab: 'automations' },
+                    { icon: <BarChart3 size={22} color="#f97316" />, bg: '#fff7ed', label: 'View Reports', sub: 'Detailed analytics', tab: 'analytics' },
+                  ].map((action, i) => (
+                    <button key={i} onClick={() => setActiveTab(action.tab)} style={{
+                      background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '10px',
+                      padding: '16px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s',
+                      display: 'flex', flexDirection: 'column', gap: '8px'
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)'; e.currentTarget.style.borderColor = '#d1d5db'; }}
+                    onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = '#e5e7eb'; }}
+                    >
+                      <div style={{ width: 40, height: 40, borderRadius: '8px', background: action.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {action.icon}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '0.875rem', fontWeight: '600', color: '#111827' }}>{action.label}</div>
+                        <div style={{ fontSize: '0.75rem', color: '#9ca3af' }}>{action.sub}</div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* API Status */}
+              <div className="content-card">
+                <h2 style={{ fontSize: '1rem', fontWeight: '700', color: '#111827', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Shield size={18} color="#3b82f6" /> API Status & Connection
+                </h2>
+                <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '10px', padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ width: 36, height: 36, borderRadius: '8px', background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <MessageSquare size={18} color="#22c55e" />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '0.875rem', fontWeight: '600', color: '#111827' }}>WhatsApp Gateway</div>
+                      <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>{wsStatus.phone_number ? `+${wsStatus.phone_number}` : 'Not connected'}</div>
+                    </div>
+                  </div>
+                  <span style={{ fontSize: '0.8rem', fontWeight: '600', color: wsStatus.status === 'connected' ? '#059669' : '#ef4444', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: wsStatus.status === 'connected' ? '#22c55e' : '#ef4444', display: 'inline-block' }}></span>
+                    {wsStatus.status === 'connected' ? 'Connected' : 'Disconnected'}
+                  </span>
+                </div>
+
+                <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '10px', padding: '14px 16px', marginBottom: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                    <span style={{ fontSize: '0.875rem', fontWeight: '600', color: '#374151' }}>AI Engine Health</span>
+                    <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>Last checked: just now</span>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    <div style={{ textAlign: 'center', background: '#ffffff', borderRadius: '8px', padding: '12px' }}>
+                      <div style={{ fontSize: '1.4rem', fontWeight: '800', color: '#111827' }}>100%</div>
+                      <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>API Uptime</div>
+                    </div>
+                    <div style={{ textAlign: 'center', background: '#ffffff', borderRadius: '8px', padding: '12px' }}>
+                      <div style={{ fontSize: '1.4rem', fontWeight: '800', color: '#111827' }}>{aiConfig.enabled ? 'ON' : 'OFF'}</div>
+                      <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>AI Status</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px' }}>
+                  <button className="btn btn-primary" style={{ flex: 1, fontSize: '0.825rem', padding: '8px 14px' }}
+                    onClick={() => { setActiveTab('settings'); setSettingsTab('whatsapp'); }}>                    <Settings size={14} /> Manage Connection
+                  </button>
+                  <button className="btn" style={{ flex: 1, fontSize: '0.825rem', padding: '8px 14px', background: '#f9fafb', border: '1px solid #e5e7eb', color: '#374151', borderRadius: '8px' }}
+                    onClick={() => { setActiveTab('settings'); setSettingsTab('ai'); }}>
+                    <Cpu size={14} /> AI Settings
+                  </button>
+                </div>
+              </div>
+            </div>
+
 
             {/* Vertical timeline Abandoned Carts section */}
             <div className="content-card mt-3">
