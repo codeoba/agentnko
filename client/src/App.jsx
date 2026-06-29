@@ -2745,85 +2745,214 @@ export default function App() {
         {/* TAB 5: CAMPAIGNS */}
         {activeTab === 'campaigns' && (
           <div className="page-container">
-            <div className="pane-header">
-              <h1>{t.campaignTitle}</h1>
-              <p>Schedule and dispatch bulk marketing/promotional notifications.</p>
+
+            {/* Page Header */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '24px', paddingBottom: '20px', borderBottom: '1px solid #e5e7eb' }}>
+              <div>
+                <h1 style={{ fontSize: '1.5rem', fontWeight: '800', color: '#111827', marginBottom: '4px' }}>Campaigns</h1>
+                <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>Create and manage your WhatsApp marketing campaigns</p>
+              </div>
+              <button
+                className="btn btn-primary"
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '8px', padding: '10px 20px', fontWeight: '700' }}
+                onClick={() => { document.getElementById('create-campaign-form').scrollIntoView({ behavior: 'smooth' }); }}
+              >
+                <Plus size={16} /> Create Campaign
+              </button>
             </div>
 
-            <div className="grid grid-2">
-              {/* Launch Campaign */}
-              <div className="content-card">
-                <h2>Launch Campaign</h2>
-                <form onSubmit={handleLaunchCampaign}>
-                  {campMsg && <div className="alert alert-info">{campMsg}</div>}
-
-                  <div className="form-group">
-                    <label>{t.campaignName}</label>
-                    <input 
-                      type="text" 
-                      required 
-                      value={campForm.name}
-                      onChange={e => setCampForm({ ...campForm, name: e.target.value })}
-                      placeholder="e.g. Wikiendi Mlipuko Promo"
-                    />
+            {/* 5 Stat Cards */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '16px', marginBottom: '28px' }}>
+              {[
+                {
+                  label: 'Total Campaigns',
+                  value: campaigns.length,
+                  sub: `${campaigns.filter(c => c.status === 'sent').length} Active`,
+                  icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
+                  color: '#9ca3af'
+                },
+                {
+                  label: 'Total Recipients',
+                  value: campaigns.reduce((s, c) => s + (c.sent_count || 0), 0),
+                  sub: `${campaigns.reduce((s, c) => s + (c.sent_count || 0), 0)} Sent`,
+                  icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+                  color: '#9ca3af'
+                },
+                {
+                  label: 'Delivery Rate',
+                  value: '0%',
+                  sub: '0 Delivered',
+                  icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22,4 12,14.01 9,11.01"/></svg>,
+                  valueColor: '#22c55e'
+                },
+                {
+                  label: 'Read Rate',
+                  value: '0%',
+                  sub: '0 Read',
+                  icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22,7 13.5,15.5 8.5,10.5 2,17"/><polyline points="16,7 22,7 22,13"/></svg>,
+                  valueColor: '#3b82f6'
+                },
+                {
+                  label: 'Failed Messages',
+                  value: campaigns.reduce((s, c) => s + (c.failed_count || 0), 0),
+                  sub: '0% Failed Rate',
+                  icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>,
+                  valueColor: campaigns.reduce((s, c) => s + (c.failed_count || 0), 0) > 0 ? '#ef4444' : '#111827'
+                },
+              ].map((stat, i) => (
+                <div key={i} style={{
+                  background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '12px',
+                  padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                      <p style={{ fontSize: '0.8rem', color: '#9ca3af', fontWeight: '500', marginBottom: '6px' }}>{stat.label}</p>
+                      <div style={{ fontSize: '1.75rem', fontWeight: '800', color: stat.valueColor || '#111827', lineHeight: 1 }}>{stat.value}</div>
+                    </div>
+                    <div style={{ opacity: 0.7 }}>{stat.icon}</div>
                   </div>
+                  <p style={{ fontSize: '0.78rem', color: '#6b7280', margin: 0 }}>{stat.sub}</p>
+                </div>
+              ))}
+            </div>
 
-                  <div className="form-group">
-                    <label>{t.targetTags}</label>
-                    <input 
-                      type="text" 
-                      placeholder="e.g. lead (leave empty to send to all contacts)"
-                      value={campForm.target_tags}
-                      onChange={e => setCampForm({ ...campForm, target_tags: e.target.value })}
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>{t.broadcastText}</label>
-                    <textarea 
-                      rows={5}
-                      required
-                      placeholder="Ujumbe utakaotumwa kwa wateja..."
-                      value={campForm.text}
-                      onChange={e => setCampForm({ ...campForm, text: e.target.value })}
-                    />
-                  </div>
-
-                  <button type="submit" className="btn btn-primary btn-block">
-                    <Play size={16} />
-                    {t.launchCampaign}
-                  </button>
-                </form>
+            {/* All Campaigns Table */}
+            <div style={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', marginBottom: '28px' }}>
+              <div style={{ padding: '20px 24px', borderBottom: '1px solid #f3f4f6' }}>
+                <h2 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#111827', marginBottom: '4px' }}>All Campaigns</h2>
+                <p style={{ fontSize: '0.825rem', color: '#6b7280' }}>Manage and monitor your campaigns</p>
               </div>
-
-              {/* Campaign Logs */}
-              <div className="content-card">
-                <h2>Campaign Dispatch History</h2>
-                <div className="timeline-carts-feed" style={{ maxHeight: '500px', overflowY: 'auto' }}>
-                  {campaigns.length === 0 ? (
-                    <p style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>No campaigns executed yet.</p>
-                  ) : (
-                    campaigns.map(c => (
-                      <div key={c.id} className="timeline-cart-node completed">
-                        <div className="log-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <h4 style={{ margin: 0, fontSize: '0.98rem' }}>{c.name}</h4>
-                          <span className={`badge badge-${c.status === 'sent' ? 'completed' : 'pending'}`}>
-                            {c.status === 'sent' ? 'Imetwa Tayari' : c.status}
-                          </span>
-                        </div>
-                        <p className="log-text" style={{ fontSize: '0.85rem', margin: '8px 0', color: 'var(--text-secondary)' }}>
-                          {c.text}
-                        </p>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                          <span>Target: {c.target_tags || 'Wote'}</span>
-                          <span>{t.scheduledAt}: {new Date(c.created_at).toLocaleString()}</span>
-                        </div>
-                      </div>
-                    ))
-                  )}
+              <div style={{ overflowX: 'auto' }}>
+                {campaigns.length === 0 ? (
+                  <div style={{ padding: '60px 24px', textAlign: 'center' }}>
+                    <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    </div>
+                    <p style={{ color: '#6b7280', fontSize: '0.9rem' }}>No campaigns found. Create your first campaign to get started.</p>
+                  </div>
+                ) : (
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ background: '#f9fafb' }}>
+                        {['Campaign Name', 'Target Tags', 'Status', 'Sent', 'Date', 'Actions'].map((h, i) => (
+                          <th key={i} style={{ padding: '12px 20px', textAlign: 'left', fontSize: '0.75rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #f3f4f6', whiteSpace: 'nowrap' }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {campaigns.map((c, i) => (
+                        <tr key={c.id} style={{ borderBottom: '1px solid #f9fafb' }}
+                          onMouseEnter={e => e.currentTarget.style.background = '#fafafa'}
+                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                          <td style={{ padding: '14px 20px' }}>
+                            <div style={{ fontWeight: '600', color: '#111827', fontSize: '0.875rem' }}>{c.name}</div>
+                            <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '2px', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.text}</div>
+                          </td>
+                          <td style={{ padding: '14px 20px' }}>
+                            <span style={{ fontSize: '0.8rem', color: '#374151', background: '#f3f4f6', padding: '3px 10px', borderRadius: '20px' }}>{c.target_tags || 'All Contacts'}</span>
+                          </td>
+                          <td style={{ padding: '14px 20px' }}>
+                            <span style={{
+                              fontSize: '0.78rem', fontWeight: '600', padding: '4px 12px', borderRadius: '20px',
+                              background: c.status === 'sent' ? '#f0fdf4' : '#fef9c3',
+                              color: c.status === 'sent' ? '#16a34a' : '#ca8a04'
+                            }}>{c.status === 'sent' ? 'Completed' : c.status || 'Pending'}</span>
+                          </td>
+                          <td style={{ padding: '14px 20px', fontSize: '0.875rem', color: '#374151', fontWeight: '600' }}>{c.sent_count || 0}</td>
+                          <td style={{ padding: '14px 20px', fontSize: '0.8rem', color: '#9ca3af', whiteSpace: 'nowrap' }}>{new Date(c.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
+                          <td style={{ padding: '14px 20px' }}>
+                            <button style={{ fontSize: '0.78rem', padding: '5px 12px', background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '6px', cursor: 'pointer', color: '#374151', fontWeight: '500' }}>View</button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+              {/* Pagination bar */}
+              <div style={{ padding: '14px 24px', borderTop: '1px solid #f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: '0.825rem', color: '#6b7280' }}>Showing 1 to {campaigns.length} of {campaigns.length} campaigns</span>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button style={{ padding: '6px 14px', border: '1px solid #e5e7eb', borderRadius: '6px', background: '#fff', color: '#9ca3af', fontSize: '0.825rem', cursor: 'pointer' }}>Previous</button>
+                  <button style={{ padding: '6px 14px', border: '1px solid #e5e7eb', borderRadius: '6px', background: '#fff', color: '#374151', fontSize: '0.825rem', cursor: 'pointer', fontWeight: '600' }}>Next</button>
                 </div>
               </div>
             </div>
+
+            {/* Create Campaign Form */}
+            <div id="create-campaign-form" style={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
+              <div style={{ padding: '20px 24px', borderBottom: '1px solid #f3f4f6', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: 36, height: 36, borderRadius: '8px', background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Plus size={18} color="#22c55e" />
+                </div>
+                <div>
+                  <h2 style={{ fontSize: '1rem', fontWeight: '700', color: '#111827', margin: 0 }}>Create New Campaign</h2>
+                  <p style={{ fontSize: '0.8rem', color: '#6b7280', margin: 0 }}>Send bulk WhatsApp messages to your contacts</p>
+                </div>
+              </div>
+              <div style={{ padding: '24px' }}>
+                <form onSubmit={handleLaunchCampaign}>
+                  {campMsg && <div className="alert alert-info" style={{ marginBottom: '16px' }}>{campMsg}</div>}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                    <div className="form-group" style={{ margin: 0 }}>
+                      <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>{t.campaignName} *</label>
+                      <input type="text" required value={campForm.name}
+                        onChange={e => setCampForm({ ...campForm, name: e.target.value })}
+                        placeholder="e.g. Wikiendi Mlipuko Promo"
+                        style={{ width: '100%', padding: '10px 14px', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '0.9rem', color: '#111827', background: '#fff', boxSizing: 'border-box' }} />
+                    </div>
+                    <div className="form-group" style={{ margin: 0 }}>
+                      <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>{t.targetTags}</label>
+                      <input type="text"
+                        placeholder="e.g. lead, premium (leave empty = all)"
+                        value={campForm.target_tags}
+                        onChange={e => setCampForm({ ...campForm, target_tags: e.target.value })}
+                        style={{ width: '100%', padding: '10px 14px', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '0.9rem', color: '#111827', background: '#fff', boxSizing: 'border-box' }} />
+                    </div>
+                  </div>
+                  <div className="form-group" style={{ margin: '0 0 20px 0' }}>
+                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>{t.broadcastText} *</label>
+                    <textarea rows={5} required
+                      placeholder="Ujumbe utakaotumwa kwa wateja wako wa WhatsApp..."
+                      value={campForm.text}
+                      onChange={e => setCampForm({ ...campForm, text: e.target.value })}
+                      style={{ width: '100%', padding: '10px 14px', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '0.9rem', color: '#111827', background: '#fff', resize: 'vertical', boxSizing: 'border-box' }} />
+                  </div>
+
+                  {/* Template Quick-Insert */}
+                  <div style={{ marginBottom: '20px' }}>
+                    <p style={{ fontSize: '0.8rem', fontWeight: '600', color: '#6b7280', marginBottom: '10px' }}>Quick templates:</p>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      {[
+                        { label: 'Promo Offer', text: 'Habari! 🎉 Tumekuandalia ofa ya kipekee - punguzo la 20% kwa manunuzi yako yote leo. Jibu "NUNUA" kuanza mchakato.' },
+                        { label: 'Reminder', text: 'Habari! ⏰ Tunakukumbusha kuhusu agizo lako. Je, una maswali yoyote? Jibu hapa na tutakusaidia.' },
+                        { label: 'New Product', text: 'Habari! 🆕 Bidhaa mpya zimewasili! Tembelea duka letu leo na upate bei nzuri. Jibu "INFO" kupata maelezo zaidi.' },
+                      ].map((tmpl, i) => (
+                        <button key={i} type="button"
+                          onClick={() => setCampForm({ ...campForm, text: tmpl.text })}
+                          style={{ fontSize: '0.78rem', padding: '5px 12px', background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '20px', cursor: 'pointer', color: '#374151', fontWeight: '500', transition: 'all 0.15s' }}
+                          onMouseEnter={e => { e.currentTarget.style.background = '#eff6ff'; e.currentTarget.style.borderColor = '#bfdbfe'; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = '#f9fafb'; e.currentTarget.style.borderColor = '#e5e7eb'; }}>
+                          📝 {tmpl.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <button type="submit" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '11px 24px', background: '#25d366', border: 'none', borderRadius: '8px', color: '#fff', fontWeight: '700', fontSize: '0.95rem', cursor: 'pointer' }}>
+                      <Play size={16} /> {t.launchCampaign}
+                    </button>
+                    <button type="button" onClick={() => setCampForm({ name: '', target_tags: '', text: '' })}
+                      style={{ padding: '11px 20px', background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '8px', color: '#6b7280', fontWeight: '600', fontSize: '0.9rem', cursor: 'pointer' }}>
+                      Clear
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+
           </div>
         )}
 
