@@ -3,6 +3,7 @@ import {
   translations 
 } from './utils/i18n.js';
 import { 
+  Bell,
   Bot, 
   Wifi, 
   WifiOff, 
@@ -45,6 +46,7 @@ import {
   UserCheck,
   Zap
 } from 'lucide-react';
+import { Toaster, toast } from 'react-hot-toast';
 
 // Enterprise Components
 import AnalyticsDashboard from './components/AnalyticsDashboard.jsx';
@@ -65,6 +67,18 @@ export default function App() {
 
   // Auth States
   const [token, setToken] = useState(localStorage.getItem('token') || '');
+  // Notifications State
+  const [notifications, setNotifications] = useState([
+    { id: 1, title: 'Welcome to AgentNko!', message: 'Your AI agent is ready to serve.', type: 'success', time: new Date() }
+  ]);
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  const addNotification = (title, message, type = 'info') => {
+    setNotifications(prev => [{ id: Date.now(), title, message, type, time: new Date() }, ...prev]);
+  };
+
+  // Add global fetch interceptor or just use it where needed.
+
   const [user, setUser] = useState(null);
   const [authMode, setAuthMode] = useState('login'); // 'login' or 'register'
   const [authForm, setAuthForm] = useState({ name: '', email: '', password: '' });
@@ -404,7 +418,7 @@ export default function App() {
       setShowAddContact(false);
       setContactForm({ phone_number: '', name: '', tags: '', notes: '' });
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 
@@ -429,7 +443,7 @@ export default function App() {
       setNewMsgText('');
       fetchChatMessages(selectedContact.id);
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 
@@ -471,7 +485,7 @@ export default function App() {
       setPayRef(data.reference);
     } catch (err) {
       setPayStatus('error');
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 
@@ -518,11 +532,11 @@ export default function App() {
         method: 'POST',
         body: JSON.stringify(adminPlanForm)
       });
-      alert('Plan updated successfully');
+      toast.success('Plan updated successfully');
       setSelectedAdminUser(null);
       fetchAdminUsers();
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 
@@ -530,10 +544,10 @@ export default function App() {
     if (!confirm('Are you sure you want to delete this user?')) return;
     try {
       await apiFetch(`/api/admin/users/${userId}`, { method: 'DELETE' });
-      alert('User deleted successfully');
+      toast.success('User deleted successfully');
       fetchAdminUsers();
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 
@@ -576,12 +590,12 @@ export default function App() {
           price: parseFloat(catalogForm.price)
         })
       });
-      alert('Product saved successfully');
+      toast.success('Product saved successfully');
       setCatalogForm({ name: '', price: '', description: '', status: 'available' });
       setSelectedProduct(null);
       fetchCatalog();
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 
@@ -591,7 +605,7 @@ export default function App() {
       await apiFetch(`/api/catalog/${id}`, { method: 'DELETE' });
       fetchCatalog();
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 
@@ -606,12 +620,12 @@ export default function App() {
           value: parseFloat(couponForm.value)
         })
       });
-      alert('Coupon saved successfully');
+      toast.success('Coupon saved successfully');
       setCouponForm({ code: '', discount_type: 'fixed', value: '', active: 1 });
       setSelectedCoupon(null);
       fetchCoupons();
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 
@@ -621,7 +635,7 @@ export default function App() {
       await apiFetch(`/api/coupons/${id}`, { method: 'DELETE' });
       fetchCoupons();
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 
@@ -662,9 +676,9 @@ export default function App() {
     setIsSyncingWoo(true);
     try {
       const data = await apiFetch('/api/config/woocommerce/sync', { method: 'POST' });
-      alert(data.message || 'WooCommerce products synced successfully!');
+      toast.error(data.message || 'WooCommerce products synced successfully!');
     } catch (err) {
-      alert('Sync failed: ' + err.message);
+      toast.error('Sync failed: ' + err.message);
     } finally {
       setIsSyncingWoo(false);
     }
@@ -701,7 +715,7 @@ export default function App() {
       });
       fetchAutomations();
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 
@@ -711,7 +725,7 @@ export default function App() {
       await apiFetch(`/api/automations/${id}`, { method: 'DELETE' });
       fetchAutomations();
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 
@@ -724,7 +738,7 @@ export default function App() {
       });
       fetchAutomations();
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 
@@ -999,6 +1013,47 @@ export default function App() {
           </div>
           
           <div className="footer-actions">
+
+            <div style={{ position: 'relative' }}>
+              <button className="btn-icon" onClick={() => setShowNotifications(!showNotifications)} title="Notifications">
+                <Bell size={18} />
+                {notifications.length > 0 && (
+                  <span style={{ position: 'absolute', top: -2, right: -2, width: 8, height: 8, background: '#ef4444', borderRadius: '50%' }}></span>
+                )}
+              </button>
+              
+              {showNotifications && (
+                <div style={{
+                  position: 'absolute', bottom: '100%', left: 0, marginBottom: '10px',
+                  width: '320px', background: '#fff', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+                  border: '1px solid #e5e7eb', zIndex: 50, overflow: 'hidden'
+                }}>
+                  <div style={{ padding: '16px', borderBottom: '1px solid #f3f4f6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h3 style={{ margin: 0, fontSize: '0.95rem', color: '#111827', fontWeight: '600' }}>Notifications</h3>
+                    <span style={{ fontSize: '0.75rem', color: '#6b7280', cursor: 'pointer' }} onClick={() => setNotifications([])}>Clear all</span>
+                  </div>
+                  <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                    {notifications.length === 0 ? (
+                      <div style={{ padding: '24px', textAlign: 'center', color: '#9ca3af', fontSize: '0.85rem' }}>No new notifications</div>
+                    ) : (
+                      notifications.map(n => (
+                        <div key={n.id} style={{ padding: '12px 16px', borderBottom: '1px solid #f9fafb', display: 'flex', gap: '12px' }}>
+                          <div style={{ 
+                            width: 8, height: 8, borderRadius: '50%', marginTop: 6, flexShrink: 0,
+                            background: n.type === 'success' ? '#22c55e' : n.type === 'error' ? '#ef4444' : '#3b82f6' 
+                          }}></div>
+                          <div>
+                            <p style={{ margin: '0 0 4px', fontSize: '0.85rem', fontWeight: '600', color: '#374151' }}>{n.title}</p>
+                            <p style={{ margin: 0, fontSize: '0.75rem', color: '#6b7280', lineHeight: 1.4 }}>{n.message}</p>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
             <button className="btn-icon" onClick={() => setLang(lang === 'en' ? 'sw' : 'en')} title="Toggle Language">
               <Languages size={18} />
             </button>
@@ -2623,7 +2678,7 @@ export default function App() {
                                 setSelectedContact(updated);
                                 fetchContacts();
                               } catch (err) {
-                                alert(err.message);
+                                toast.error(err.message);
                               }
                             }}
                             className="assignee-select"
@@ -2678,16 +2733,16 @@ export default function App() {
                       />
                       <div className="chat-toolbar">
                         <div className="toolbar-left">
-                          <button type="button" className="toolbar-btn" title="Upload Image" onClick={() => alert('Feature: Image upload coming soon!')}>
+                          <button type="button" className="toolbar-btn" title="Upload Image" onClick={() => toast.success('Feature: Image upload coming soon!')}>
                             <Image size={18} />
                           </button>
-                          <button type="button" className="toolbar-btn" title="Attach Document" onClick={() => alert('Feature: Document attachment coming soon!')}>
+                          <button type="button" className="toolbar-btn" title="Attach Document" onClick={() => toast.success('Feature: Document attachment coming soon!')}>
                             <Paperclip size={18} />
                           </button>
                           <button type="button" className="toolbar-btn" title="Add Emoji" onClick={() => setNewMsgText(prev => prev + ' 😊')}>
                             <Smile size={18} />
                           </button>
-                          <button type="button" className="toolbar-btn" title="Send Voice Note" onClick={() => alert('Feature: Push-to-talk recording coming soon!')}>
+                          <button type="button" className="toolbar-btn" title="Send Voice Note" onClick={() => toast.success('Feature: Push-to-talk recording coming soon!')}>
                             <Mic size={18} />
                           </button>
                           
@@ -2706,7 +2761,7 @@ export default function App() {
                                 setSelectedContact(updated);
                                 fetchContacts();
                               } catch (err) {
-                                alert(err.message);
+                                toast.error(err.message);
                               }
                             }}
                           >
