@@ -2328,132 +2328,171 @@ export default function App() {
             {/* Sub-tab 4: Billing & SaaS */}
             {settingsTab === 'billing' && (
               <div>
-                <div className="grid grid-3">
-                  {/* Free Plan */}
-                  <div className="pricing-card">
-                    <h3>{t.freePlan}</h3>
-                    <div className="price">0 {t.currency}<span>/ month</span></div>
-                    <ul>
-                      <li>1 AI Agent Connection</li>
-                      <li>Gemini 2.0 Flash Support</li>
-                      <li>Basic CRM & Chat Logs</li>
-                    </ul>
-                    <button className="btn btn-outline btn-block mt-3" disabled>Active Plan</button>
+                <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+                  <h2 style={{ fontSize: '1.5rem', fontWeight: '800', color: '#111827', marginBottom: '8px' }}>Choose Your Plan</h2>
+                  <p style={{ color: '#6b7280', fontSize: '0.95rem' }}>Upgrade anytime. Cancel anytime. All prices in TZS.</p>
+                </div>
+                <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '14px 20px', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ fontSize: '1.2rem' }}>&#x2705;</span>
+                    <span style={{ fontSize: '0.875rem', color: '#374151', fontWeight: '600' }}>Current plan: <strong style={{ color: '#059669', textTransform: 'uppercase' }}>{user.plan}</strong></span>
                   </div>
-
-                  {/* Pro Agent Plan */}
-                  <div className="pricing-card featured">
-                    <h3>{t.proPlan}</h3>
-                    <div className="price">10,000 {t.currency}<span>/ month</span></div>
-                    <ul>
-                      <li>All AI Engines (Claude, OpenAI)</li>
-                      <li>Full Bulk Campaigns</li>
-                      <li>Advanced CRM Tags & Filters</li>
-                      <li>Fast Agent Response Time</li>
-                    </ul>
-                    <button 
-                      className="btn btn-primary btn-block mt-3"
-                      onClick={() => {
-                        setPayAmount(10000);
-                        setPayStatus('input');
-                      }}
-                    >
-                      Subscribe (10k)
+                  {user.active_until && (
+                    <span style={{ fontSize: '0.8rem', color: '#6b7280', background: '#ffffff', padding: '4px 12px', borderRadius: '20px', border: '1px solid #d1fae5' }}>
+                      Valid until: <strong>{new Date(user.active_until).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</strong>
+                    </span>
+                  )}
+                </div>
+                <div className="grid grid-3" style={{ gap: '20px', alignItems: 'stretch' }}>
+                  <div style={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '16px', padding: '28px 24px', display: 'flex', flexDirection: 'column', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+                    <div style={{ marginBottom: '20px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                        <div style={{ width: 36, height: 36, borderRadius: '10px', background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>🤖</div>
+                        <span style={{ fontSize: '0.7rem', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em' }}>JARIBIO LA BURE</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '6px' }}>
+                        <span style={{ fontSize: '2.4rem', fontWeight: '800', color: '#111827', lineHeight: 1 }}>0</span>
+                        <span style={{ fontSize: '1rem', fontWeight: '600', color: '#6b7280' }}> TZS</span>
+                        <span style={{ fontSize: '0.875rem', color: '#9ca3af' }}>/month</span>
+                      </div>
+                      <p style={{ fontSize: '0.825rem', color: '#6b7280' }}>Anza bila malipo yoyote</p>
+                    </div>
+                    <div style={{ borderTop: '1px solid #f3f4f6', paddingTop: '20px', marginBottom: '24px', flex: 1 }}>
+                      <p style={{ fontSize: '0.75rem', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '14px' }}>INAJUMUISHA</p>
+                      {['1 AI Agent Connection', 'Gemini 2.0 Flash Support', 'Basic CRM & Chat Logs', 'Up to 50 Contacts', 'Basic Automations'].map((f, i) => (
+                        <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '10px' }}>
+                          <span style={{ width: 18, height: 18, borderRadius: '50%', background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '1px' }}>
+                            <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="#9ca3af" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                          </span>
+                          <span style={{ fontSize: '0.875rem', color: '#374151' }}>{f}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <button disabled style={{ width: '100%', padding: '11px', borderRadius: '10px', background: '#f9fafb', border: '1px solid #e5e7eb', color: '#9ca3af', fontWeight: '600', fontSize: '0.9rem', cursor: 'not-allowed' }}>
+                      {user.plan === 'free' ? '✓ Active Plan' : 'Free Plan'}
                     </button>
                   </div>
-
-                  {/* Elite Enterprise Plan */}
-                  <div className="pricing-card">
-                    <h3>{t.premiumPlan}</h3>
-                    <div className="price">25,000 {t.currency}<span>/ month</span></div>
-                    <ul>
-                      <li>Unlimited Contacts & History</li>
-                      <li>High-speed bulk queuing</li>
-                      <li>Priority Server Bandwidth</li>
-                      <li>Dedicated Support agent</li>
-                    </ul>
-                    <button 
-                      className="btn btn-primary btn-block mt-3"
-                      onClick={() => {
-                        setPayAmount(25000);
-                        setPayStatus('input');
-                      }}
-                    >
-                      Subscribe (25k)
+                  <div style={{ background: '#ffffff', border: '2px solid #25d366', borderRadius: '16px', padding: '28px 24px', display: 'flex', flexDirection: 'column', boxShadow: '0 8px 32px rgba(37, 211, 102, 0.15)', position: 'relative', overflow: 'hidden' }}>
+                    <div style={{ position: 'absolute', top: '16px', right: '16px', background: '#25d366', color: '#fff', fontSize: '0.7rem', fontWeight: '700', padding: '3px 10px', borderRadius: '20px', textTransform: 'uppercase' }}>Most Popular</div>
+                    <div style={{ marginBottom: '20px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                        <div style={{ width: 36, height: 36, borderRadius: '10px', background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>&#x26A1;</div>
+                        <span style={{ fontSize: '0.7rem', fontWeight: '700', color: '#059669', textTransform: 'uppercase', letterSpacing: '0.08em' }}>PRO AGENT</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '6px' }}>
+                        <span style={{ fontSize: '2.4rem', fontWeight: '800', color: '#111827', lineHeight: 1 }}>10,000</span>
+                        <span style={{ fontSize: '1rem', fontWeight: '600', color: '#6b7280' }}> TZS</span>
+                        <span style={{ fontSize: '0.875rem', color: '#9ca3af' }}>/month</span>
+                      </div>
+                      <p style={{ fontSize: '0.825rem', color: '#6b7280' }}>Kwa biashara inayokua haraka</p>
+                    </div>
+                    <div style={{ borderTop: '1px solid #d1fae5', paddingTop: '20px', marginBottom: '24px', flex: 1 }}>
+                      <p style={{ fontSize: '0.75rem', fontWeight: '700', color: '#059669', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '14px' }}>KILA KITU KWENYE FREE, PAMOJA NA:</p>
+                      {['All AI Engines (Claude, OpenAI, Gemini)', 'Full Bulk Campaigns (Unlimited)', 'Advanced CRM Tags & Filters', 'Fast Agent Response Time', 'WooCommerce Integration', 'Up to 2,000 Contacts', 'Analytics Dashboard'].map((f, i) => (
+                        <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '10px' }}>
+                          <span style={{ width: 18, height: 18, borderRadius: '50%', background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '1px' }}>
+                            <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="#16a34a" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                          </span>
+                          <span style={{ fontSize: '0.875rem', color: '#111827', fontWeight: '500' }}>{f}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <button style={{ width: '100%', padding: '12px', borderRadius: '10px', background: '#25d366', border: 'none', color: '#fff', fontWeight: '700', fontSize: '0.95rem', cursor: 'pointer' }}
+                      onClick={() => { setPayAmount(10000); setPayStatus('input'); }}
+                      onMouseEnter={e => e.currentTarget.style.background = '#1db954'}
+                      onMouseLeave={e => e.currentTarget.style.background = '#25d366'}>
+                      {user.plan === 'pro' ? '✓ Current Plan - Renew' : 'Subscribe (10k/mo)'}
+                    </button>
+                  </div>
+                  <div style={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '16px', padding: '28px 24px', display: 'flex', flexDirection: 'column', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+                    <div style={{ marginBottom: '20px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                        <div style={{ width: 36, height: 36, borderRadius: '10px', background: '#f5f3ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>&#x1F451;</div>
+                        <span style={{ fontSize: '0.7rem', fontWeight: '700', color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '0.08em' }}>ELITE ENTERPRISE</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '6px' }}>
+                        <span style={{ fontSize: '2.4rem', fontWeight: '800', color: '#111827', lineHeight: 1 }}>25,000</span>
+                        <span style={{ fontSize: '1rem', fontWeight: '600', color: '#6b7280' }}> TZS</span>
+                        <span style={{ fontSize: '0.875rem', color: '#9ca3af' }}>/month</span>
+                      </div>
+                      <p style={{ fontSize: '0.825rem', color: '#6b7280' }}>Kwa makampuni makubwa</p>
+                    </div>
+                    <div style={{ borderTop: '1px solid #f3f4f6', paddingTop: '20px', marginBottom: '24px', flex: 1 }}>
+                      <p style={{ fontSize: '0.75rem', fontWeight: '700', color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '14px' }}>KILA KITU KWENYE PRO, PAMOJA NA:</p>
+                      {['Unlimited Contacts & History', 'High-speed Bulk Message Queuing', 'Priority Server Bandwidth', 'Dedicated Support Agent', 'Custom AI Prompt Templates', 'Multi-Agent Team Inbox', 'SLA Uptime Guarantee'].map((f, i) => (
+                        <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '10px' }}>
+                          <span style={{ width: 18, height: 18, borderRadius: '50%', background: '#ede9fe', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '1px' }}>
+                            <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="#7c3aed" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                          </span>
+                          <span style={{ fontSize: '0.875rem', color: '#111827', fontWeight: '500' }}>{f}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <button style={{ width: '100%', padding: '12px', borderRadius: '10px', background: '#7c3aed', border: 'none', color: '#fff', fontWeight: '700', fontSize: '0.95rem', cursor: 'pointer' }}
+                      onClick={() => { setPayAmount(25000); setPayStatus('input'); }}
+                      onMouseEnter={e => e.currentTarget.style.background = '#6d28d9'}
+                      onMouseLeave={e => e.currentTarget.style.background = '#7c3aed'}>
+                      {user.plan === 'premium' ? '✓ Current Plan - Renew' : 'Subscribe (25k/mo)'}
                     </button>
                   </div>
                 </div>
-
-                {/* Payment Input Modal/Section */}
                 {(payStatus === 'input' || payStatus === 'processing' || payStatus === 'success') && (
-                  <div className="payment-modal content-card mt-5">
-                    <h2>Complete Subscription Payment</h2>
-                    <p>Package upgrade: <strong>{payAmount === 10000 ? t.proPlan : t.premiumPlan}</strong> ({payAmount.toLocaleString()} {t.currency})</p>
-
+                  <div style={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '16px', padding: '32px', marginTop: '32px', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                      <div style={{ width: 40, height: 40, borderRadius: '10px', background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <CreditCard size={20} color="#25d366" />
+                      </div>
+                      <h2 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#111827', margin: 0 }}>Complete Subscription Payment</h2>
+                    </div>
+                    <p style={{ color: '#6b7280', fontSize: '0.875rem', marginBottom: '24px', marginLeft: '52px' }}>
+                      Upgrading to: <strong style={{ color: '#111827' }}>{payAmount === 10000 ? 'Pro Agent' : 'Elite Enterprise'}</strong>
+                      <span style={{ background: '#f0fdf4', color: '#059669', padding: '2px 10px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: '700', marginLeft: '8px', border: '1px solid #bbf7d0' }}>{payAmount.toLocaleString()} TZS / month</span>
+                    </p>
                     {payStatus === 'input' && (
                       <form onSubmit={handlePayment}>
-                        <div className="form-group">
-                          <label>{t.inputPaymentPhone}</label>
-                          <input 
-                            type="text" 
-                            required 
-                            placeholder="e.g. 0768222333"
-                            value={payPhone}
-                            onChange={e => setPayPhone(e.target.value)}
-                          />
+                        <div className="form-group" style={{ marginBottom: '16px' }}>
+                          <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>{t.inputPaymentPhone}</label>
+                          <input type="text" required placeholder="e.g. 0768222333" value={payPhone} onChange={e => setPayPhone(e.target.value)}
+                            style={{ width: '100%', padding: '10px 14px', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '0.9rem', color: '#111827', background: '#fff' }} />
                         </div>
-
-                        <div className="form-group">
-                          <label>Select Payment Provider</label>
-                          <div className="payment-providers">
-                            <label className="provider-option">
-                              <input 
-                                type="radio" 
-                                name="provider" 
-                                value="mpesa"
-                                checked={payProvider === 'mpesa'}
-                                onChange={() => setPayProvider('mpesa')}
-                              />
-                              <span>Vodacom M-Pesa</span>
-                            </label>
-                            <label className="provider-option">
-                              <input 
-                                type="radio" 
-                                name="provider" 
-                                value="tigopesa"
-                                checked={payProvider === 'tigopesa'}
-                                onChange={() => setPayProvider('tigopesa')}
-                              />
-                              <span>Tigo Pesa</span>
-                            </label>
+                        <div className="form-group" style={{ marginBottom: '24px' }}>
+                          <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', color: '#374151', marginBottom: '12px' }}>Select Payment Provider</label>
+                          <div style={{ display: 'flex', gap: '12px' }}>
+                            {[{value:'mpesa', label:'Vodacom M-Pesa', color:'#ef4444'}, {value:'tigopesa', label:'Tigo Pesa', color:'#3b82f6'}].map(p => (
+                              <label key={p.value} style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 16px', borderRadius: '10px', cursor: 'pointer', border: payProvider === p.value ? '2px solid ' + p.color : '1px solid #e5e7eb', background: '#f9fafb', transition: 'all 0.2s' }}>
+                                <input type="radio" name="provider" value={p.value} checked={payProvider === p.value} onChange={() => setPayProvider(p.value)} />
+                                <span style={{ fontSize: '0.875rem', fontWeight: '600', color: '#111827' }}>{p.label}</span>
+                              </label>
+                            ))}
                           </div>
                         </div>
-
-                        <button type="submit" className="btn btn-primary">{t.payNow}</button>
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                          <button type="submit" style={{ padding: '11px 28px', background: '#25d366', border: 'none', borderRadius: '10px', color: '#fff', fontWeight: '700', fontSize: '0.95rem', cursor: 'pointer' }}>{t.payNow}</button>
+                          <button type="button" onClick={() => setPayStatus('')} style={{ padding: '11px 20px', background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '10px', color: '#6b7280', fontWeight: '600', fontSize: '0.9rem', cursor: 'pointer' }}>Cancel</button>
+                        </div>
                       </form>
                     )}
-
                     {payStatus === 'processing' && (
-                      <div className="payment-spinner">
-                        <Loader className="spin" size={48} />
-                        <p>{t.paymentProcessing}</p>
-                        <span className="ref-display">Transaction Ref: {payRef}</span>
+                      <div style={{ textAlign: 'center', padding: '32px 0' }}>
+                        <Loader className="spin" size={48} color="#25d366" />
+                        <p style={{ color: '#374151', fontWeight: '600', fontSize: '1rem', margin: '16px 0 8px' }}>{t.paymentProcessing}</p>
+                        <span style={{ fontSize: '0.8rem', color: '#9ca3af', background: '#f3f4f6', padding: '4px 12px', borderRadius: '20px' }}>Ref: {payRef}</span>
                       </div>
                     )}
-
                     {payStatus === 'success' && (
-                      <div className="payment-success-box">
-                        <CheckCircle size={64} className="text-success" />
-                        <p>{t.paymentSuccess}</p>
-                        <button className="btn btn-primary" onClick={() => setPayStatus('')}>Close</button>
+                      <div style={{ textAlign: 'center', padding: '32px 0' }}>
+                        <div style={{ width: 72, height: 72, borderRadius: '50%', background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                          <CheckCircle size={44} color="#22c55e" />
+                        </div>
+                        <p style={{ color: '#111827', fontWeight: '700', fontSize: '1.1rem', marginBottom: '8px' }}>{t.paymentSuccess}</p>
+                        <p style={{ color: '#6b7280', fontSize: '0.875rem', marginBottom: '24px' }}>Plan yako imesasishwa. Furahia huduma za premium!</p>
+                        <button onClick={() => setPayStatus('')} style={{ padding: '10px 28px', background: '#25d366', border: 'none', borderRadius: '10px', color: '#fff', fontWeight: '700', cursor: 'pointer' }}>Funga</button>
                       </div>
                     )}
                   </div>
                 )}
               </div>
             )}
-          </div>
-        )}
 
         {/* TAB 4: CRM CONTACTS */}
         {activeTab === 'crm' && (
