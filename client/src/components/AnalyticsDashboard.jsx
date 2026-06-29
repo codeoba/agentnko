@@ -1,231 +1,214 @@
 import React, { useState, useEffect } from 'react';
 import {
-  TrendingUp, MessageSquare, Users, Send, Clock, Zap, Eye,
-  ArrowUp, ArrowDown, BarChart3, RefreshCw, Hash
+  Calendar, Upload, MessageSquare, CheckCircle2, Eye, Reply, XCircle, Database
 } from 'lucide-react';
 
 export default function AnalyticsDashboard({ apiFetch, t }) {
-  const [overview, setOverview] = useState(null);
-  const [keywords, setKeywords] = useState([]);
-  const [responseTimes, setResponseTimes] = useState(null);
-  const [contactGrowth, setContactGrowth] = useState(null);
-  const [days, setDays] = useState(30);
-  const [loading, setLoading] = useState(true);
+  const [timeRange, setTimeRange] = useState('30 Days');
+  const [activeTab, setActiveTab] = useState('Overview');
 
-  useEffect(() => {
-    loadAll();
-  }, [days]);
-
-  async function loadAll() {
-    setLoading(true);
-    try {
-      const [ov, kw, rt, cg] = await Promise.all([
-        apiFetch(`/api/analytics/overview?days=${days}`),
-        apiFetch(`/api/analytics/keywords?days=${days}&limit=15`),
-        apiFetch(`/api/analytics/response-times?days=${days}`),
-        apiFetch('/api/analytics/contact-growth'),
-      ]);
-      setOverview(ov);
-      setKeywords(kw);
-      setResponseTimes(rt);
-      setContactGrowth(cg);
-    } catch (err) {
-      console.error('Analytics load error:', err);
-    } finally {
-      setLoading(false);
+  // Dummy stats simulating the UI, later hook this to actual API.
+  const stats = {
+    totalMessages: 0,
+    deliveryRate: '0.0%',
+    readRate: '0.0%',
+    replyRate: '0.0%',
+    failureRate: '0.0%',
+    summary: {
+      activeCampaigns: 0,
+      totalCampaigns: 0,
+      uniqueContacts: 0,
+      totalRecipients: 0
     }
-  }
-
-  function getBarWidth(count, max) {
-    return max > 0 ? Math.round((count / max) * 100) : 0;
-  }
-
-  const maxKeyword = keywords.length > 0 ? keywords[0].count : 1;
-
-  // Build daily chart data
-  const dailyLabels = overview?.daily_data?.map(d => d.date?.slice(5)) || [];
-  const dailyIncoming = overview?.daily_data?.map(d => d.incoming_count) || [];
-  const dailyOutgoing = overview?.daily_data?.map(d => d.outgoing_count) || [];
-  const maxDaily = Math.max(...dailyIncoming, ...dailyOutgoing, 1);
+  };
 
   return (
-    <div className="analytics-dashboard">
-      {/* Header */}
-      <div className="analytics-header">
-        <div>
-          <h2 className="analytics-title">
-            <BarChart3 size={22} />
-            Analytics Dashboard
-          </h2>
-          <p className="analytics-subtitle">Takwimu za matumizi ya AgentNKO yako</p>
+    <div style={{ padding: '0', background: 'transparent', minHeight: '100%', fontFamily: '"Inter", "Segoe UI", sans-serif' }}>
+      
+      {/* 1. Header */}
+      <div style={{ marginBottom: '24px' }}>
+        <h1 style={{ fontSize: '1.5rem', fontWeight: '700', color: '#111827', margin: '0 0 4px 0' }}>Analytics & Reports</h1>
+        <p style={{ color: '#6b7280', fontSize: '0.875rem', margin: 0 }}>Track your WhatsApp business performance with real-time data</p>
+      </div>
+
+      {/* 2. Filters Bar */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', background: '#ffffff', padding: '16px 24px', borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#6b7280', fontWeight: '500', fontSize: '0.9rem' }}>
+            <Calendar size={18} />
+            <span>Time Range:</span>
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            {['7 Days', '30 Days', '3 Months'].map(range => (
+              <button
+                key={range}
+                onClick={() => setTimeRange(range)}
+                style={{
+                  padding: '8px 16px', fontSize: '0.85rem', fontWeight: '600', cursor: 'pointer',
+                  border: timeRange === range ? 'none' : '1px solid #e5e7eb',
+                  borderRadius: '6px',
+                  background: timeRange === range ? '#16a34a' : '#ffffff',
+                  color: timeRange === range ? '#ffffff' : '#374151',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                {range}
+              </button>
+            ))}
+            <button style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', fontSize: '0.85rem', fontWeight: '500', cursor: 'pointer', border: '1px solid #e5e7eb', borderRadius: '6px', background: '#ffffff', color: '#374151' }}>
+              <Calendar size={14} /> Custom
+            </button>
+          </div>
         </div>
-        <div className="analytics-controls">
-          <select
-            className="analytics-period-select"
-            value={days}
-            onChange={e => setDays(parseInt(e.target.value))}
+        
+        <button style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', fontSize: '0.85rem', fontWeight: '600', cursor: 'pointer', border: '1px solid #e5e7eb', borderRadius: '6px', background: '#ffffff', color: '#374151', transition: 'all 0.2s ease' }}>
+          <Upload size={16} color="#6b7280" /> Export
+        </button>
+      </div>
+
+      {/* 3. Tab Selector */}
+      <div style={{ background: '#f3f4f6', padding: '6px', borderRadius: '10px', display: 'flex', marginBottom: '24px', border: '1px solid #e5e7eb' }}>
+        {['Overview', 'Messages', 'Campaigns'].map(tab => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            style={{
+              flex: 1, padding: '10px', fontSize: '0.9rem', fontWeight: activeTab === tab ? '600' : '500', cursor: 'pointer',
+              border: 'none', borderRadius: '6px',
+              background: activeTab === tab ? '#ffffff' : 'transparent',
+              color: activeTab === tab ? '#111827' : '#6b7280',
+              boxShadow: activeTab === tab ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+              transition: 'all 0.2s ease'
+            }}
           >
-            <option value={7}>Wiki 1</option>
-            <option value={30}>Mwezi 1</option>
-            <option value={90}>Miezi 3</option>
-          </select>
-          <button className="btn-refresh" onClick={loadAll} disabled={loading}>
-            <RefreshCw size={16} className={loading ? 'spin' : ''} />
+            {tab}
           </button>
+        ))}
+      </div>
+
+      {/* 4. 5 Stat Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '16px', marginBottom: '24px' }}>
+        {/* Total Messages */}
+        <div style={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '20px', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+            <div>
+              <p style={{ margin: '0 0 8px 0', fontSize: '0.85rem', color: '#6b7280', fontWeight: '500' }}>Total Messages</p>
+              <h3 style={{ margin: 0, fontSize: '1.75rem', fontWeight: '700', color: '#111827' }}>{stats.totalMessages}</h3>
+            </div>
+            <div style={{ width: 40, height: 40, borderRadius: '10px', background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <MessageSquare size={20} color="#3b82f6" />
+            </div>
+          </div>
+          <p style={{ margin: '16px 0 0 0', fontSize: '0.75rem', color: '#9ca3af' }}>Last 30 days</p>
+        </div>
+
+        {/* Delivery Rate */}
+        <div style={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '20px', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+            <div>
+              <p style={{ margin: '0 0 8px 0', fontSize: '0.85rem', color: '#6b7280', fontWeight: '500' }}>Delivery Rate</p>
+              <h3 style={{ margin: 0, fontSize: '1.75rem', fontWeight: '700', color: '#16a34a' }}>{stats.deliveryRate}</h3>
+            </div>
+            <div style={{ width: 40, height: 40, borderRadius: '10px', background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <CheckCircle2 size={20} color="#16a34a" />
+            </div>
+          </div>
+          <div style={{ height: '6px', background: '#e5e7eb', borderRadius: '3px', marginTop: '16px', overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: '0%', background: '#16a34a', borderRadius: '3px' }}></div>
+          </div>
+        </div>
+
+        {/* Read Rate */}
+        <div style={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '20px', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+            <div>
+              <p style={{ margin: '0 0 8px 0', fontSize: '0.85rem', color: '#6b7280', fontWeight: '500' }}>Read Rate</p>
+              <h3 style={{ margin: 0, fontSize: '1.75rem', fontWeight: '700', color: '#f97316' }}>{stats.readRate}</h3>
+            </div>
+            <div style={{ width: 40, height: 40, borderRadius: '10px', background: '#fff7ed', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Eye size={20} color="#f97316" />
+            </div>
+          </div>
+          <div style={{ height: '6px', background: '#e5e7eb', borderRadius: '3px', marginTop: '16px', overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: '0%', background: '#f97316', borderRadius: '3px' }}></div>
+          </div>
+        </div>
+
+        {/* Reply Rate */}
+        <div style={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '20px', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+            <div>
+              <p style={{ margin: '0 0 8px 0', fontSize: '0.85rem', color: '#6b7280', fontWeight: '500' }}>Reply Rate</p>
+              <h3 style={{ margin: 0, fontSize: '1.75rem', fontWeight: '700', color: '#8b5cf6' }}>{stats.replyRate}</h3>
+            </div>
+            <div style={{ width: 40, height: 40, borderRadius: '10px', background: '#f5f3ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Reply size={20} color="#8b5cf6" />
+            </div>
+          </div>
+          <div style={{ height: '6px', background: '#e5e7eb', borderRadius: '3px', marginTop: '16px', overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: '0%', background: '#8b5cf6', borderRadius: '3px' }}></div>
+          </div>
+        </div>
+
+        {/* Failure Rate */}
+        <div style={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '20px', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+            <div>
+              <p style={{ margin: '0 0 8px 0', fontSize: '0.85rem', color: '#6b7280', fontWeight: '500' }}>Failure Rate</p>
+              <h3 style={{ margin: 0, fontSize: '1.75rem', fontWeight: '700', color: '#ef4444' }}>{stats.failureRate}</h3>
+            </div>
+            <div style={{ width: 40, height: 40, borderRadius: '10px', background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <XCircle size={20} color="#ef4444" />
+            </div>
+          </div>
+          <div style={{ height: '6px', background: '#e5e7eb', borderRadius: '3px', marginTop: '16px', overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: '0%', background: '#ef4444', borderRadius: '3px' }}></div>
+          </div>
         </div>
       </div>
 
-      {loading && <div className="analytics-loading"><div className="spinner" /><span>Inapakia takwimu...</span></div>}
-
-      {!loading && overview && (
-        <>
-          {/* Stats Cards */}
-          <div className="analytics-stats-grid">
-            <StatCard
-              icon={<MessageSquare size={20} />}
-              label="Messages Zilizoingia"
-              value={overview.totals.incoming.toLocaleString()}
-              color="blue"
-              sub={`Kutoka siku ${days} zilizopita`}
-            />
-            <StatCard
-              icon={<Send size={20} />}
-              label="Messages Zilizotumwa"
-              value={overview.totals.outgoing.toLocaleString()}
-              color="green"
-              sub={`AI: ${overview.totals.ai_responses} | Manual: ${overview.totals.manual_responses}`}
-            />
-            <StatCard
-              icon={<Zap size={20} />}
-              label="AI Automation Rate"
-              value={`${overview.ai_automation_rate}%`}
-              color="purple"
-              sub="Messages zilizojibiwa na AI"
-            />
-            <StatCard
-              icon={<TrendingUp size={20} />}
-              label="Conversion Rate"
-              value={`${overview.conversion_rate}%`}
-              color="orange"
-              sub="Wateja walioshughulikiwa"
-            />
-            <StatCard
-              icon={<Users size={20} />}
-              label="Contacts Wapya"
-              value={contactGrowth?.this_week || 0}
-              color="teal"
-              growth={contactGrowth?.growth_percent}
-              sub="Wiki hii"
-            />
-            <StatCard
-              icon={<Clock size={20} />}
-              label="Wakati wa Kujibu"
-              value={`${responseTimes?.avg_seconds || 0}s`}
-              color="pink"
-              sub={`Max: ${responseTimes?.max_seconds || 0}s | Min: ${responseTimes?.min_seconds || 0}s`}
-            />
+      {/* 5. Main Content Area */}
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px' }}>
+        
+        {/* Message Performance */}
+        <div style={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '24px', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
+          <h3 style={{ margin: '0 0 24px 0', fontSize: '1.1rem', fontWeight: '700', color: '#111827' }}>Message Performance</h3>
+          
+          <div style={{ border: '1px solid #e5e7eb', borderRadius: '12px', height: '300px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#ffffff' }}>
+            <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+              <Database size={28} color="#9ca3af" />
+            </div>
+            <h4 style={{ margin: '0 0 8px 0', fontSize: '1.1rem', fontWeight: '600', color: '#111827' }}>Message Performance</h4>
+            <p style={{ margin: 0, fontSize: '0.9rem', color: '#6b7280' }}>No data available</p>
           </div>
+        </div>
 
-          {/* Daily Messages Chart */}
-          <div className="analytics-section">
-            <h3 className="analytics-section-title">📈 Messages kwa Siku ({days} siku)</h3>
-            <div className="chart-container">
-              {dailyLabels.length === 0 ? (
-                <div className="chart-empty">Hakuna data ya kutosha. Anza kuwasiliana na wateja.</div>
-              ) : (
-                <div className="bar-chart">
-                  {dailyLabels.map((label, i) => (
-                    <div key={i} className="bar-group">
-                      <div className="bar-pair">
-                        <div
-                          className="bar bar-incoming"
-                          style={{ height: `${getBarWidth(dailyIncoming[i], maxDaily)}%` }}
-                          title={`Incoming: ${dailyIncoming[i]}`}
-                        />
-                        <div
-                          className="bar bar-outgoing"
-                          style={{ height: `${getBarWidth(dailyOutgoing[i], maxDaily)}%` }}
-                          title={`Outgoing: ${dailyOutgoing[i]}`}
-                        />
-                      </div>
-                      <div className="bar-label">{label}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <div className="chart-legend">
-                <span className="legend-item"><span className="legend-dot blue" /> Incoming</span>
-                <span className="legend-item"><span className="legend-dot green" /> Outgoing</span>
-              </div>
+        {/* Summary */}
+        <div style={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '24px', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
+          <h3 style={{ margin: '0 0 24px 0', fontSize: '1.1rem', fontWeight: '700', color: '#111827' }}>Summary</h3>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '16px', borderBottom: '1px solid #f3f4f6' }}>
+              <span style={{ fontSize: '0.9rem', color: '#4b5563', fontWeight: '500' }}>Active Campaigns</span>
+              <span style={{ fontSize: '0.95rem', color: '#111827', fontWeight: '600' }}>{stats.summary.activeCampaigns}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '16px', borderBottom: '1px solid #f3f4f6' }}>
+              <span style={{ fontSize: '0.9rem', color: '#4b5563', fontWeight: '500' }}>Total Campaigns</span>
+              <span style={{ fontSize: '0.95rem', color: '#111827', fontWeight: '600' }}>{stats.summary.totalCampaigns}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '16px', borderBottom: '1px solid #f3f4f6' }}>
+              <span style={{ fontSize: '0.9rem', color: '#4b5563', fontWeight: '500' }}>Unique Contacts</span>
+              <span style={{ fontSize: '0.95rem', color: '#111827', fontWeight: '600' }}>{stats.summary.uniqueContacts}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.9rem', color: '#4b5563', fontWeight: '500' }}>Total Recipients</span>
+              <span style={{ fontSize: '0.95rem', color: '#111827', fontWeight: '600' }}>{stats.summary.totalRecipients}</span>
             </div>
           </div>
+        </div>
 
-          {/* Top Keywords */}
-          <div className="analytics-section">
-            <h3 className="analytics-section-title"><Hash size={16} /> Maneno Yanayotumiwa Zaidi na Wateja</h3>
-            {keywords.length === 0 ? (
-              <div className="chart-empty">Hakuna maneno ya kutosha bado.</div>
-            ) : (
-              <div className="keywords-list">
-                {keywords.map((kw, i) => (
-                  <div key={i} className="keyword-row">
-                    <span className="keyword-rank">#{i + 1}</span>
-                    <span className="keyword-word">{kw.word}</span>
-                    <div className="keyword-bar-wrap">
-                      <div
-                        className="keyword-bar"
-                        style={{ width: `${getBarWidth(kw.count, maxKeyword)}%` }}
-                      />
-                    </div>
-                    <span className="keyword-count">{kw.count}x</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* AI Performance */}
-          <div className="analytics-section">
-            <h3 className="analytics-section-title">🤖 Utendaji wa AI</h3>
-            <div className="ai-performance-grid">
-              <div className="ai-perf-card">
-                <div className="ai-perf-value">{overview.totals.ai_responses.toLocaleString()}</div>
-                <div className="ai-perf-label">Majibu ya AI</div>
-              </div>
-              <div className="ai-perf-card">
-                <div className="ai-perf-value">{overview.totals.manual_responses.toLocaleString()}</div>
-                <div className="ai-perf-label">Majibu ya Binadamu</div>
-              </div>
-              <div className="ai-perf-card">
-                <div className="ai-perf-value ai-perf-big">{overview.ai_automation_rate}%</div>
-                <div className="ai-perf-label">Automation Rate</div>
-                <div className="ai-perf-bar-wrap">
-                  <div className="ai-perf-bar" style={{ width: `${overview.ai_automation_rate}%` }} />
-                </div>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
-function StatCard({ icon, label, value, color, sub, growth }) {
-  return (
-    <div className={`analytics-stat-card stat-card-${color}`}>
-      <div className="stat-card-icon">{icon}</div>
-      <div className="stat-card-content">
-        <div className="stat-card-value">{value}</div>
-        <div className="stat-card-label">{label}</div>
-        {sub && <div className="stat-card-sub">{sub}</div>}
-        {growth !== undefined && (
-          <div className={`stat-card-growth ${growth >= 0 ? 'positive' : 'negative'}`}>
-            {growth >= 0 ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
-            {Math.abs(growth)}% vs wiki iliyopita
-          </div>
-        )}
       </div>
+
     </div>
   );
 }
