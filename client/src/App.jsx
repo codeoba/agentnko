@@ -894,8 +894,8 @@ export default function App() {
             className={`nav-item ${activeTab === 'automations' ? 'active' : ''}`}
             onClick={() => setActiveTab('automations')}
           >
-            <Cpu size={20} />
-            <span>Automations</span>
+            <Bot size={20} />
+            <span>Chatbot Builder</span>
           </button>
 
           {/* ===== ENTERPRISE NAV ===== */}
@@ -1351,15 +1351,15 @@ export default function App() {
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     boxShadow: '0 4px 16px rgba(124,58,237,0.4)'
                   }}>
-                    <Cpu size={20} color="#fff" />
+                    <Bot size={20} color="#fff" />
                   </div>
                   <h1 style={{
                     fontFamily: 'var(--font-display)', fontSize: '1.75rem',
                     fontWeight: 800, letterSpacing: '-0.04em', margin: 0
-                  }}>Automation Flows</h1>
+                  }}>Chatbot Builder</h1>
                 </div>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', margin: 0 }}>
-                  Rule-based triggers that run 24/7 without manual intervention.
+                  Build auto-reply rules to respond to customers instantly, 24/7.
                 </p>
               </div>
 
