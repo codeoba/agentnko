@@ -401,6 +401,9 @@ export async function startWhatsappSession(userId) {
 
               console.log(`Final message text sending to ${phone}: "${cleanedResponse}"`);
 
+              // Wait 1.5 seconds to let the socket settle after incoming events
+              await new Promise(resolve => setTimeout(resolve, 1500));
+
               // Send reply (with dynamic pdf document attachment if generated)
               await sendWhatsAppMessage(userId, phone, cleanedResponse, {
                 documentPath: receiptPath,
