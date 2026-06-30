@@ -809,6 +809,28 @@ select option {
   z-index: 1;
 }
 
+/* Auth form input visibility fix */
+.auth-card input[type="email"],
+.auth-card input[type="password"],
+.auth-card input[type="text"] {
+  color: #f1f5f9 !important;
+  background: rgba(255,255,255,0.07) !important;
+  border: 1px solid rgba(255,255,255,0.15) !important;
+  caret-color: #a78bfa;
+}
+.auth-card input[type="email"]::placeholder,
+.auth-card input[type="password"]::placeholder,
+.auth-card input[type="text"]::placeholder {
+  color: rgba(255,255,255,0.3) !important;
+}
+.auth-card input[type="email"]:focus,
+.auth-card input[type="password"]:focus,
+.auth-card input[type="text"]:focus {
+  color: #ffffff !important;
+  background: rgba(139,92,246,0.1) !important;
+  border-color: rgba(139,92,246,0.5) !important;
+}
+
 .auth-card::before {
   content: '';
   position: absolute;
@@ -1232,11 +1254,12 @@ select option {
 .chat-input-bar input,
 .chat-textarea {
   flex-grow: 1;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid var(--border-color);
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.15);
   border-radius: var(--radius-md);
   padding: 10px 14px;
-  color: var(--text-primary);
+  color: #f1f5f9;
+  caret-color: #a78bfa;
   font-family: var(--font-body);
   font-size: 0.875rem;
   outline: none;
@@ -1244,10 +1267,15 @@ select option {
   resize: none;
   width: 100%;
 }
+.chat-input-bar input::placeholder,
+.chat-textarea::placeholder {
+  color: rgba(255,255,255,0.35);
+}
 .chat-input-bar input:focus,
 .chat-textarea:focus {
-  border-color: rgba(139,92,246,0.4);
-  background: rgba(139,92,246,0.03);
+  border-color: rgba(139,92,246,0.5);
+  background: rgba(139,92,246,0.06);
+  color: #f8fafc;
 }
 
 .chat-toolbar { display: flex; justify-content: space-between; align-items: center; }
