@@ -46,7 +46,7 @@ async function callGemini(prompt, systemPrompt, apiKey, model = 'gemini-2.0-flas
     const aiModel = genAI.getGenerativeModel({
       model: selectedModel,
       systemInstruction: systemPrompt
-    });
+    }, { apiVersion: 'v1' });
     
     const parts = [{ text: prompt }];
     if (audioBase64) {
@@ -71,7 +71,7 @@ async function callGemini(prompt, systemPrompt, apiKey, model = 'gemini-2.0-flas
         const aiModel = genAI.getGenerativeModel({
           model: 'gemini-1.5-flash',
           systemInstruction: systemPrompt
-        });
+        }, { apiVersion: 'v1' });
         
         const parts = [{ text: prompt }];
         if (audioBase64) {
