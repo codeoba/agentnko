@@ -50,7 +50,8 @@ async function sendViaBaileys(userId, phone, text, options) {
 
   // 1. Tuma ujumbe wa maandishi
   if (text) {
-    await session.sock.sendMessage(jid, { text });
+    const sendResult = await session.sock.sendMessage(jid, { text });
+    console.log(`Baileys sendMessage result for ${jid}:`, JSON.stringify(sendResult));
   }
 
   // 2. Tuma stakabadhi / PDF kama iko
