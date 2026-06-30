@@ -67,7 +67,8 @@ export async function startWhatsappSession(userId) {
     auth: state,
     logger,
     printQRInTerminal: false,
-    mobile: false
+    mobile: false,
+    shouldSyncHistoryMessage: () => false
   });
 
   const sessionObj = {
