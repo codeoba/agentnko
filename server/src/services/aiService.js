@@ -64,35 +64,106 @@ async function callGemini(prompt, systemPrompt, apiKey, model = 'gemini-2.0-flas
     });
     return result.response.text();
   } catch (err) {
-    if (selectedModel.includes('gemini-2.0-flash') && (err.message.includes('429') || err.message.includes('Quota') || err.message.includes('quota') || err.status === 429)) {
-      console.log("Gemini 2.0 Flash failed due to quota. Falling back to Gemini 1.5 Flash...");
+    // If systemInstruction is not supported/recognized in v1 payload
+    if (err.message.includes('systemInstruction') || err.message.includes('system_instruction') || err.status === 400) {
+      console.log(`System instruction error with ${selectedModel} on v1. Retrying by prepending system prompt...`);
       try {
         const genAI = new GoogleGenerativeAI(apiKey);
         const aiModel = genAI.getGenerativeModel({
-          model: 'gemini-1.5-flash',
-          systemInstruction: systemPrompt
+          model: selectedModel
         }, { apiVersion: 'v1' });
         
-        const parts = [{ text: prompt }];
+        const parts = [];
+        if (systemPrompt) {
+          parts.push({ text: `INSTRUCTIONS FOR AI AGENT:\n${systemPrompt}\n\n---\n\n` });
+        }
         if (audioBase64) {
-          parts.unshift({
+          parts.push({
             inlineData: {
               data: audioBase64,
               mimeType: 'audio/ogg; codecs=opus'
             }
           });
         }
+        parts.push({ text: prompt });
 
         const result = await aiModel.generateContent({
           contents: [{ role: 'user', parts: parts }],
           generationConfig: { temperature: temperature }
         });
         return result.response.text();
-      } catch (fallbackErr) {
-        throw fallbackErr;
+      } catch (retryErr) {
+        // If it was a quota error during retry
+        if (selectedModel.includes('gemini-2.0-flash') && (retryErr.message.includes('429') || retryErr.message.includes('Quota') || retryErr.message.includes('quota') || retryErr.status === 429)) {
+          return await callGeminiFallback(prompt, systemPrompt, apiKey, temperature, audioBase64);
+        }
+        throw retryErr;
       }
     }
+
+    // If quota exceeded on initial try
+    if (selectedModel.includes('gemini-2.0-flash') && (err.message.includes('429') || err.message.includes('Quota') || err.message.includes('quota') || err.status === 429)) {
+      return await callGeminiFallback(prompt, systemPrompt, apiKey, temperature, audioBase64);
+    }
     throw err;
+  }
+}
+
+// Separate helper for Gemini 1.5 Flash fallback to keep code clean and readable
+async function callGeminiFallback(prompt, systemPrompt, apiKey, temperature, audioBase64) {
+  console.log("Gemini 2.0 Flash failed. Falling back to Gemini 1.5 Flash on v1...");
+  try {
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const aiModel = genAI.getGenerativeModel({
+      model: 'gemini-1.5-flash',
+      systemInstruction: systemPrompt
+    }, { apiVersion: 'v1' });
+    
+    const parts = [{ text: prompt }];
+    if (audioBase64) {
+      parts.unshift({
+        inlineData: {
+          data: audioBase64,
+          mimeType: 'audio/ogg; codecs=opus'
+        }
+      });
+    }
+
+    const result = await aiModel.generateContent({
+      contents: [{ role: 'user', parts: parts }],
+      generationConfig: { temperature: temperature }
+    });
+    return result.response.text();
+  } catch (fallbackErr) {
+    // If fallback fails due to systemInstruction or other bad request
+    if (fallbackErr.message.includes('systemInstruction') || fallbackErr.message.includes('system_instruction') || fallbackErr.status === 400) {
+      console.log("Gemini 1.5 Flash systemInstruction failed. Retrying by prepending system prompt...");
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const aiModel = genAI.getGenerativeModel({
+        model: 'gemini-1.5-flash'
+      }, { apiVersion: 'v1' });
+      
+      const parts = [];
+      if (systemPrompt) {
+        parts.push({ text: `INSTRUCTIONS FOR AI AGENT:\n${systemPrompt}\n\n---\n\n` });
+      }
+      if (audioBase64) {
+        parts.push({
+          inlineData: {
+            data: audioBase64,
+            mimeType: 'audio/ogg; codecs=opus'
+          }
+        });
+      }
+      parts.push({ text: prompt });
+
+      const result = await aiModel.generateContent({
+        contents: [{ role: 'user', parts: parts }],
+        generationConfig: { temperature: temperature }
+      });
+      return result.response.text();
+    }
+    throw fallbackErr;
   }
 }
 
