@@ -40,27 +40,60 @@ function getPlatformApiKey(provider) {
 }
 
 async function callGemini(prompt, systemPrompt, apiKey, model = 'gemini-2.0-flash', temperature = 0.7, audioBase64 = null) {
-  const genAI = new GoogleGenerativeAI(apiKey);
-  const aiModel = genAI.getGenerativeModel({
-    model: model || 'gemini-2.0-flash',
-    systemInstruction: systemPrompt
-  });
-  
-  const parts = [{ text: prompt }];
-  if (audioBase64) {
-    parts.unshift({
-      inlineData: {
-        data: audioBase64,
-        mimeType: 'audio/ogg; codecs=opus'
-      }
+  const selectedModel = model || 'gemini-2.0-flash';
+  try {
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const aiModel = genAI.getGenerativeModel({
+      model: selectedModel,
+      systemInstruction: systemPrompt
     });
-  }
+    
+    const parts = [{ text: prompt }];
+    if (audioBase64) {
+      parts.unshift({
+        inlineData: {
+          data: audioBase64,
+          mimeType: 'audio/ogg; codecs=opus'
+        }
+      });
+    }
 
-  const result = await aiModel.generateContent({
-    contents: [{ role: 'user', parts: parts }],
-    generationConfig: { temperature: temperature }
-  });
-  return result.response.text();
+    const result = await aiModel.generateContent({
+      contents: [{ role: 'user', parts: parts }],
+      generationConfig: { temperature: temperature }
+    });
+    return result.response.text();
+  } catch (err) {
+    if (selectedModel.includes('gemini-2.0-flash') && (err.message.includes('429') || err.message.includes('Quota') || err.message.includes('quota') || err.status === 429)) {
+      console.log("Gemini 2.0 Flash failed due to quota. Falling back to Gemini 1.5 Flash...");
+      try {
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const aiModel = genAI.getGenerativeModel({
+          model: 'gemini-1.5-flash',
+          systemInstruction: systemPrompt
+        });
+        
+        const parts = [{ text: prompt }];
+        if (audioBase64) {
+          parts.unshift({
+            inlineData: {
+              data: audioBase64,
+              mimeType: 'audio/ogg; codecs=opus'
+            }
+          });
+        }
+
+        const result = await aiModel.generateContent({
+          contents: [{ role: 'user', parts: parts }],
+          generationConfig: { temperature: temperature }
+        });
+        return result.response.text();
+      } catch (fallbackErr) {
+        throw fallbackErr;
+      }
+    }
+    throw err;
+  }
 }
 
 async function callOpenAI(prompt, systemPrompt, apiKey, model = 'gpt-4o-mini', temperature = 0.7) {
