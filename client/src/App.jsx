@@ -2208,17 +2208,15 @@ export default function App() {
                     </div>
                   </div>
 
-                  {user && user.role === 'admin' && (
                     <div className="form-group">
-                      <label>{t.apiKeyOverride}</label>
+                      <label>{t.apiKeyOverride || "Gemini API Key"}</label>
                       <input 
                         type="password" 
                         value={aiConfig.api_key}
-                        placeholder="sk-..."
+                        placeholder="AQ..."
                         onChange={e => setAiConfig({ ...aiConfig, api_key: e.target.value })}
                       />
                     </div>
-                  )}
 
                   <div className="form-group">
                     <label>{t.systemPrompt}</label>
