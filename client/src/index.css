@@ -2229,3 +2229,109 @@ select option {
 .agent-pending-badge { background: rgba(245,158,11,0.12); color: #fbbf24; padding: 3px 8px; border-radius: 20px; font-size: 0.72rem; font-weight: 600; }
 
 /* ── End Enterprise CSS v4.0 ── */
+
+/* ════════════════════════════════════════════════════════════════
+   RESPONSIVE — Mobile & Tablet Fixes
+════════════════════════════════════════════════════════════════ */
+
+/* Large desktops – keep sidebar at 240px */
+@media (min-width: 1280px) {
+  :root { --sidebar-width: 240px; }
+}
+
+/* Medium screens (tablets/small laptops) – shrink sidebar */
+@media (max-width: 1279px) and (min-width: 768px) {
+  :root { --sidebar-width: 200px; }
+
+  .sidebar-brand h3 { font-size: 0.95rem; }
+  .nav-item span { font-size: 0.82rem; }
+  .main-content { min-width: 0; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .page-header { flex-wrap: wrap; gap: 10px; }
+}
+
+/* Small tablets / large phones */
+@media (max-width: 767px) {
+  :root { --sidebar-width: 60px; }
+
+  body { overflow: auto; }
+
+  .app-layout {
+    flex-direction: row;
+    overflow-x: hidden;
+  }
+
+  .sidebar {
+    width: 60px;
+    min-width: 60px;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  .sidebar-brand h3,
+  .sidebar-brand span,
+  .nav-item span,
+  .sidebar-footer .user-info {
+    display: none;
+  }
+
+  .sidebar-brand {
+    justify-content: center;
+    padding: 12px 0;
+  }
+
+  .nav-item {
+    justify-content: center;
+    padding: 10px 0;
+  }
+
+  .nav-item svg, .nav-item .nav-icon {
+    margin: 0;
+  }
+
+  .main-content {
+    flex: 1;
+    min-width: 0;
+    overflow-x: hidden;
+    padding: 12px;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .page-header h1 { font-size: 1.2rem; }
+
+  .card { padding: 14px; }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-content {
+    width: 95vw;
+    max-width: 95vw;
+    margin: 20px auto;
+    padding: 16px;
+  }
+
+  .table-wrapper { overflow-x: auto; }
+
+  .btn { padding: 8px 14px; font-size: 0.82rem; }
+}
+
+/* Very small phones */
+@media (max-width: 480px) {
+  .stats-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .stat-card { padding: 12px; }
+  .stat-number { font-size: 1.4rem; }
+  .main-content { padding: 8px; }
+}
+
