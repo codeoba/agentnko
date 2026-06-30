@@ -337,6 +337,7 @@ export async function startWhatsappSession(userId) {
 
             const combinedSystemPrompt = activePrompt + dynamicContext;
             const responseText = await askAI(promptContext, combinedSystemPrompt, aiConfig, audioBase64);
+            console.log(`Raw AI Response for user ${userId}: "${responseText}"`);
             
             if (responseText) {
               let cleanedResponse = responseText;
@@ -351,6 +352,8 @@ export async function startWhatsappSession(userId) {
                 await db.run("UPDATE contacts SET agent_mode = 'sales' WHERE id = ?", [contact.id]);
                 console.log(`Dynamic Route: Switched contact ${contact.phone_number} to Sales Mode`);
               }
+
+              console.log(`Cleaned AI Response to send for user ${userId}: "${cleanedResponse}"`);
 
               // 2. Check for PDF receipt generation tag
               let receiptPath = null;
@@ -377,7 +380,7 @@ export async function startWhatsappSession(userId) {
                       finalOrderId = wooOrderId;
                     }
                   } catch (wErr) {
-                    console.error("WooCommerce order sync error:", wErr);
+                    console.log("WooCommerce order sync error:", wErr);
                   }
 
                   // Generate PDF
@@ -392,9 +395,11 @@ export async function startWhatsappSession(userId) {
                   });
                   
                 } catch (pdfErr) {
-                  console.error("Failed to parse receipt data or generate PDF:", pdfErr);
+                  console.log("Failed to parse receipt data or generate PDF:", pdfErr);
                 }
               }
+
+              console.log(`Final message text sending to ${phone}: "${cleanedResponse}"`);
 
               // Send reply (with dynamic pdf document attachment if generated)
               await sendWhatsAppMessage(userId, phone, cleanedResponse, {
