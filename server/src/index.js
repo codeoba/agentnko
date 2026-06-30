@@ -246,6 +246,7 @@ app.get('/api/config/ai', authenticateToken, async (req, res) => {
 app.post('/api/config/ai', authenticateToken, async (req, res) => {
   const { provider, model, api_key, system_prompt, support_prompt, temperature, enabled } = req.body;
   const db = getDb();
+  const dbApiKey = (api_key === '' || api_key === undefined || api_key === null) ? null : api_key;
   try {
     await db.run(
       `INSERT INTO ai_configs (user_id, provider, model, api_key, system_prompt, support_prompt, temperature, enabled, updated_at)
@@ -255,8 +256,8 @@ app.post('/api/config/ai', authenticateToken, async (req, res) => {
         system_prompt = ?, support_prompt = ?, temperature = ?, enabled = ?, 
         updated_at = CURRENT_TIMESTAMP`,
       [
-        req.user.id, provider, model, api_key, system_prompt, support_prompt, temperature, enabled,
-        provider, model, api_key, system_prompt, support_prompt, temperature, enabled
+        req.user.id, provider, model, dbApiKey, system_prompt, support_prompt, temperature, enabled,
+        provider, model, dbApiKey, system_prompt, support_prompt, temperature, enabled
       ]
     );
     res.json({ message: 'AI configuration updated successfully.' });
