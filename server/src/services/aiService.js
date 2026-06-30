@@ -93,16 +93,16 @@ async function callGemini(prompt, systemPrompt, apiKey, model = 'gemini-2.0-flas
         });
         return result.response.text();
       } catch (retryErr) {
-        // If it failed again (e.g. 503 Service Unavailable or 429), fall back to Gemini 1.5 Flash
-        if (selectedModel.includes('gemini-2.0-flash')) {
+        // If it failed again, fall back to Gemini 1.5 Flash
+        if (selectedModel !== 'gemini-1.5-flash') {
           return await callGeminiFallback(prompt, systemPrompt, apiKey, temperature, audioBase64);
         }
         throw retryErr;
       }
     }
 
-    // If ANY other error (quota, 503 service unavailable, etc) on initial try for 2.0, fallback to 1.5
-    if (selectedModel.includes('gemini-2.0-flash')) {
+    // If ANY other error (quota, 503, invalid model name, etc) on initial try, fallback to 1.5
+    if (selectedModel !== 'gemini-1.5-flash') {
       return await callGeminiFallback(prompt, systemPrompt, apiKey, temperature, audioBase64);
     }
     throw err;
