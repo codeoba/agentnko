@@ -108,10 +108,10 @@ async function callAnthropic(prompt, systemPrompt, apiKey, model = 'claude-3-5-s
 
 async function callOpenRouter(prompt, systemPrompt, apiKey, model = 'meta-llama/llama-3-8b-instruct:free', temperature = 0.7) {
   let selectedModel = model || 'meta-llama/llama-3-8b-instruct:free';
-  if (selectedModel === 'gemini-2.0-flash' || selectedModel === 'gemini-2.5-flash' || selectedModel === 'google/gemini-2.0-flash') {
-    selectedModel = 'google/gemini-2.0-flash-001';
-  } else if (selectedModel === 'gemini-1.5-flash' || selectedModel === 'google/gemini-1.5-flash') {
-    selectedModel = 'google/gemini-flash-1.5';
+  if (selectedModel === 'gemini-2.0-flash' || selectedModel === 'gemini-2.5-flash' || selectedModel === 'google/gemini-2.0-flash' || selectedModel === 'google/gemini-2.0-flash-001') {
+    selectedModel = 'google/gemini-2.0-flash-exp:free';
+  } else if (selectedModel === 'gemini-1.5-flash' || selectedModel === 'google/gemini-1.5-flash' || selectedModel === 'google/gemini-flash-1.5') {
+    selectedModel = 'google/gemini-2.0-flash-exp:free';
   }
 
   const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
