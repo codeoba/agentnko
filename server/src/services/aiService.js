@@ -41,91 +41,43 @@ function getPlatformApiKey(provider) {
 
 async function callGemini(prompt, systemPrompt, apiKey, model = 'gemini-2.0-flash', temperature = 0.7, audioBase64 = null) {
   const selectedModel = model || 'gemini-2.0-flash';
-  try {
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const aiModel = genAI.getGenerativeModel({
-      model: selectedModel,
-      systemInstruction: systemPrompt
-    }, { apiVersion: 'v1beta' });
-    
-    const parts = [{ text: prompt }];
-    if (audioBase64) {
-      parts.unshift({
-        inlineData: {
-          data: audioBase64,
-          mimeType: 'audio/ogg; codecs=opus'
-        }
-      });
-    }
-
-    const result = await aiModel.generateContent({
-      contents: [{ role: 'user', parts: parts }],
-      generationConfig: { temperature: temperature }
-    });
-    return result.response.text();
-  } catch (err) {
-    // If ANY error (quota, 503, invalid model, etc) happens with gemini-2.0-flash, fallback to gemini-1.5-flash
-    if (selectedModel !== 'gemini-1.5-flash') {
-      return await callGeminiFallback(prompt, systemPrompt, apiKey, temperature, audioBase64);
-    }
-    throw err;
-  }
-}
-
-// Separate helper for Gemini 1.5 Flash fallback to keep code clean and readable
-async function callGeminiFallback(prompt, systemPrompt, apiKey, temperature, audioBase64) {
-  console.log("Gemini 2.0 Flash failed. Falling back to Gemini 1.5 Flash on v1beta...");
-  try {
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const aiModel = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
-      systemInstruction: systemPrompt
-    }, { apiVersion: 'v1beta' });
-    
-    const parts = [{ text: prompt }];
-    if (audioBase64) {
-      parts.unshift({
-        inlineData: {
-          data: audioBase64,
-          mimeType: 'audio/ogg; codecs=opus'
-        }
-      });
-    }
-
-    const result = await aiModel.generateContent({
-      contents: [{ role: 'user', parts: parts }],
-      generationConfig: { temperature: temperature }
-    });
-    return result.response.text();
-  } catch (fallbackErr) {
-    // Fallback if systemInstruction fails on v1beta (very unlikely, but as double safety)
-    if (fallbackErr.message.includes('systemInstruction') || fallbackErr.message.includes('system_instruction') || fallbackErr.status === 400) {
+  let attempts = 0;
+  const maxAttempts = 2;
+  
+  while (attempts < maxAttempts) {
+    attempts++;
+    try {
       const genAI = new GoogleGenerativeAI(apiKey);
       const aiModel = genAI.getGenerativeModel({
-        model: 'gemini-1.5-flash'
+        model: selectedModel,
+        systemInstruction: systemPrompt
       }, { apiVersion: 'v1beta' });
       
-      const parts = [];
-      if (systemPrompt) {
-        parts.push({ text: `INSTRUCTIONS FOR AI AGENT:\n${systemPrompt}\n\n---\n\n` });
-      }
+      const parts = [{ text: prompt }];
       if (audioBase64) {
-        parts.push({
+        parts.unshift({
           inlineData: {
             data: audioBase64,
             mimeType: 'audio/ogg; codecs=opus'
           }
         });
       }
-      parts.push({ text: prompt });
 
       const result = await aiModel.generateContent({
         contents: [{ role: 'user', parts: parts }],
         generationConfig: { temperature: temperature }
       });
       return result.response.text();
+    } catch (err) {
+      console.log(`Gemini call attempt ${attempts} failed for model ${selectedModel}:`, err.message || err);
+      
+      if (attempts < maxAttempts && (err.message.includes('503') || err.message.includes('429') || err.status === 503 || err.status === 429 || err.message.includes('overloaded') || err.message.includes('quota') || err.message.includes('limit'))) {
+        console.log(`Temporary error detected. Waiting 2.5 seconds before retry...`);
+        await new Promise(resolve => setTimeout(resolve, 2500));
+        continue;
+      }
+      throw err;
     }
-    throw fallbackErr;
   }
 }
 
