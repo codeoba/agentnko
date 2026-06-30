@@ -46,7 +46,7 @@ async function callGemini(prompt, systemPrompt, apiKey, model = 'gemini-2.0-flas
     const aiModel = genAI.getGenerativeModel({
       model: selectedModel,
       systemInstruction: systemPrompt
-    }, { apiVersion: 'v1' });
+    }, { apiVersion: 'v1beta' });
     
     const parts = [{ text: prompt }];
     if (audioBase64) {
@@ -64,44 +64,7 @@ async function callGemini(prompt, systemPrompt, apiKey, model = 'gemini-2.0-flas
     });
     return result.response.text();
   } catch (err) {
-    // If systemInstruction is not supported/recognized in v1 payload
-    if (err.message.includes('systemInstruction') || err.message.includes('system_instruction') || err.status === 400) {
-      console.log(`System instruction error with ${selectedModel} on v1. Retrying by prepending system prompt...`);
-      try {
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const aiModel = genAI.getGenerativeModel({
-          model: selectedModel
-        }, { apiVersion: 'v1' });
-        
-        const parts = [];
-        if (systemPrompt) {
-          parts.push({ text: `INSTRUCTIONS FOR AI AGENT:\n${systemPrompt}\n\n---\n\n` });
-        }
-        if (audioBase64) {
-          parts.push({
-            inlineData: {
-              data: audioBase64,
-              mimeType: 'audio/ogg; codecs=opus'
-            }
-          });
-        }
-        parts.push({ text: prompt });
-
-        const result = await aiModel.generateContent({
-          contents: [{ role: 'user', parts: parts }],
-          generationConfig: { temperature: temperature }
-        });
-        return result.response.text();
-      } catch (retryErr) {
-        // If it failed again, fall back to Gemini 1.5 Flash
-        if (selectedModel !== 'gemini-1.5-flash') {
-          return await callGeminiFallback(prompt, systemPrompt, apiKey, temperature, audioBase64);
-        }
-        throw retryErr;
-      }
-    }
-
-    // If ANY other error (quota, 503, invalid model name, etc) on initial try, fallback to 1.5
+    // If ANY error (quota, 503, invalid model, etc) happens with gemini-2.0-flash, fallback to gemini-1.5-flash
     if (selectedModel !== 'gemini-1.5-flash') {
       return await callGeminiFallback(prompt, systemPrompt, apiKey, temperature, audioBase64);
     }
@@ -111,13 +74,13 @@ async function callGemini(prompt, systemPrompt, apiKey, model = 'gemini-2.0-flas
 
 // Separate helper for Gemini 1.5 Flash fallback to keep code clean and readable
 async function callGeminiFallback(prompt, systemPrompt, apiKey, temperature, audioBase64) {
-  console.log("Gemini 2.0 Flash failed. Falling back to Gemini 1.5 Flash on v1...");
+  console.log("Gemini 2.0 Flash failed. Falling back to Gemini 1.5 Flash on v1beta...");
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
     const aiModel = genAI.getGenerativeModel({
       model: 'gemini-1.5-flash',
       systemInstruction: systemPrompt
-    }, { apiVersion: 'v1' });
+    }, { apiVersion: 'v1beta' });
     
     const parts = [{ text: prompt }];
     if (audioBase64) {
@@ -135,13 +98,12 @@ async function callGeminiFallback(prompt, systemPrompt, apiKey, temperature, aud
     });
     return result.response.text();
   } catch (fallbackErr) {
-    // If fallback fails due to systemInstruction or other bad request
+    // Fallback if systemInstruction fails on v1beta (very unlikely, but as double safety)
     if (fallbackErr.message.includes('systemInstruction') || fallbackErr.message.includes('system_instruction') || fallbackErr.status === 400) {
-      console.log("Gemini 1.5 Flash systemInstruction failed. Retrying by prepending system prompt...");
       const genAI = new GoogleGenerativeAI(apiKey);
       const aiModel = genAI.getGenerativeModel({
         model: 'gemini-1.5-flash'
-      }, { apiVersion: 'v1' });
+      }, { apiVersion: 'v1beta' });
       
       const parts = [];
       if (systemPrompt) {
